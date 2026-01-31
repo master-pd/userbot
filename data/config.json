@@ -1,0 +1,17 @@
+{
+  "settings": {
+    "reply_in_groups": true,
+    "reply_in_channels": false,
+    "use_borders": true,
+    "max_actions_per_minute": 50,
+    "typing_min_delay": 800,
+    "typing_max_delay": 4000,
+    "log_level": "info",
+    "auto_react": true,
+    "auto_voice": true,
+    "auto_sticker": true,
+    "auto_meme": true,
+    "typing_effect": true
+  },
+  "reactions": ["👍", "❤️", "🔥", "😂", "😮", "😢", "😡", "🎉", "🤔", "👏"]
+}
