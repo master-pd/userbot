@@ -150,7 +150,7 @@ class SpamProtection {
   constructor() {
     this.mutedUsers = new Map();
     this.messageTimestamps = new Map();
-    this.MAX_MESSAGES_PER_MINUTE = 7;
+    this.MAX_MESSAGES_PER_MINUTE = 60;
     this.MUTE_DURATION = 60000;
   }
 
