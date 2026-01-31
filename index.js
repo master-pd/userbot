@@ -1,6 +1,6 @@
 // ============================================
-// YOUR CRUSH Userbot - COMPLETE FINAL CODE
-// ALL FEATURES INCLUDED - PROFESSIONAL VERSION
+// YOUR CRUSH Userbot - COMPLETE ALL FEATURES
+// ALL FEATURES INCLUDED - FINAL VERSION
 // ============================================
 
 const { TelegramClient } = require('telegram');
@@ -22,14 +22,48 @@ const OWNER_ID = parseInt(process.env.OWNER_ID) || 0;
 const PORT = process.env.PORT || 3000;
 
 // ============================================
+// AUTO BLOCKQUOTE SYSTEM
+// ============================================
+class AutoBlockquoteSystem {
+  constructor() {
+    this.dataPath = path.join(__dirname, 'data');
+  }
+
+  autoBlockquote(text) {
+    if (!text || text.trim() === '') return text;
+    if (text.includes('<blockquote>')) return text;
+    
+    // Remove existing blockquote if any
+    let cleanText = text.replace(/<\/?blockquote>/g, '');
+    
+    // Auto blockquote
+    return `<blockquote>${cleanText}</blockquote>`;
+  }
+
+  async loadTypingMessages() {
+    try {
+      const typingPath = path.join(this.dataPath, 'typing.json');
+      const typingData = await fs.readFile(typingPath, 'utf8');
+      return JSON.parse(typingData);
+    } catch (error) {
+      return [
+        "══════════════════════\n\n      <b>Typing...</b> 🤫\n\n     ══════════════════════",
+        "══════════════════════\n\n  <i>একটু ওয়েট কর...</i> ⏳\n\n     ══════════════════════",
+        "══════════════════════\n\n    <code>Thinking...</code> 🤔\n\n     ══════════════════════",
+        "══════════════════════\n\n    <b>রিপ্লাই আসছে...</b> 🚀\n\n     ══════════════════════"
+      ];
+    }
+  }
+}
+
+// ============================================
 // PERFECT BORDER SYSTEM
 // ============================================
 class PerfectBorderSystem {
   constructor() {
     this.borders = [];
     this.dataPath = path.join(__dirname, 'data');
-    this.maxBorderLength = 40;
-    this.minBorderLength = 10;
+    this.blockquoteSystem = new AutoBlockquoteSystem();
   }
 
   async loadBorders() {
@@ -51,12 +85,7 @@ class PerfectBorderSystem {
       { "name": "Single Line", "top": "───", "bottom": "───" },
       { "name": "Star Style", "top": "✦──", "bottom": "──✦" },
       { "name": "Heart Style", "top": "❤️─", "bottom": "─❤️" },
-      { "name": "Arrow Style", "top": "»─", "bottom": "─«" },
-      { "name": "Dotted Line", "top": "•••", "bottom": "•••" },
-      { "name": "Wave Style", "top": "〜〜", "bottom": "〜〜" },
-      { "name": "Fire Style", "top": "🔥─", "bottom": "─🔥" },
-      { "name": "Music Style", "top": "♫─", "bottom": "─♫" },
-      { "name": "Thick Line", "top": "━━━", "bottom": "━━━" }
+      { "name": "Arrow Style", "top": "»─", "bottom": "─«" }
     ];
   }
 
@@ -67,41 +96,27 @@ class PerfectBorderSystem {
     );
   }
 
-  calculateOptimalBorderLength(text) {
-    if (!text) return this.minBorderLength;
-    
-    const lines = text.split('\n');
-    let maxLineLength = 0;
-    
-    for (const line of lines) {
-      const cleanLine = line.replace(/<[^>]*>/g, '').trim();
-      if (cleanLine.length > maxLineLength) maxLineLength = cleanLine.length;
-    }
-    
-    if (maxLineLength <= 5) return 22;
-    if (maxLineLength <= 10) return 25;
-    if (maxLineLength <= 15) return 30;
-    if (maxLineLength <= 20) return 35;
-    
-    return Math.min(maxLineLength + 6, this.maxBorderLength);
-  }
-
   createPerfectBorder(text) {
     if (!text || text.trim() === '') return text;
     if (this.borders.length === 0) return text;
     
+    const blockquotedText = this.blockquoteSystem.autoBlockquote(text);
     const border = this.borders[Math.floor(Math.random() * this.borders.length)];
-    const optimalLength = this.calculateOptimalBorderLength(text);
+    
+    const cleanText = blockquotedText.replace(/<[^>]*>/g, '');
+    const textLength = cleanText.length;
+    const optimalLength = Math.max(22, Math.min(textLength + 6, 40));
     
     const topBorder = this.createBorderLine(border.top, optimalLength);
     const bottomBorder = this.createBorderLine(border.bottom, optimalLength);
-    const centeredLines = this.createCenteredLines(text, optimalLength);
     
-    const result = [topBorder, ''];
-    centeredLines.forEach(line => result.push(line));
-    result.push('', bottomBorder);
+    const totalPadding = optimalLength - textLength;
+    const leftPadding = Math.floor(totalPadding / 2);
+    const rightPadding = totalPadding - leftPadding;
     
-    return result.join('\n');
+    const centeredText = ' '.repeat(Math.max(0, leftPadding)) + blockquotedText + ' '.repeat(Math.max(0, rightPadding));
+    
+    return `${topBorder}\n\n${centeredText}\n\n${bottomBorder}`;
   }
 
   createBorderLine(borderPattern, targetLength) {
@@ -112,8 +127,8 @@ class PerfectBorderSystem {
       const leftPart = borderPattern.substring(0, Math.floor(borderPattern.length / 2));
       const rightPart = borderPattern.substring(Math.floor(borderPattern.length / 2));
       
-      let middleChar = '─';
-      if (borderPattern.includes('═')) middleChar = '═';
+      let middleChar = '═';
+      if (borderPattern.includes('─')) middleChar = '─';
       else if (borderPattern.includes('━')) middleChar = '━';
       
       const middleLength = targetLength - (leftPart.length + rightPart.length);
@@ -126,53 +141,6 @@ class PerfectBorderSystem {
     
     return result.substring(0, targetLength);
   }
-
-  createCenteredLines(text, borderLength) {
-    return text.split('\n').map(line => {
-      if (line.trim() === '') return '';
-      
-      const cleanText = line.replace(/<[^>]*>/g, '');
-      const textLength = cleanText.length;
-      
-      if (textLength >= borderLength - 2) return line;
-      
-      const totalPadding = borderLength - textLength;
-      const leftPadding = Math.floor(totalPadding / 2);
-      const rightPadding = totalPadding - leftPadding;
-      
-      return ' '.repeat(Math.max(0, leftPadding)) + line + ' '.repeat(Math.max(0, rightPadding));
-    });
-  }
-}
-
-// ============================================
-// TYPING SIMULATION SYSTEM
-// ============================================
-class TypingSystem {
-  constructor(client) {
-    this.client = client;
-    this.isTyping = false;
-  }
-
-  async showTyping(chatId) {
-    if (this.isTyping) return;
-    
-    this.isTyping = true;
-    try {
-      await this.client.invoke({
-        _: 'messages.setTyping',
-        peer: await this.client.getInputEntity(chatId),
-        action: { _: 'sendMessageTypingAction' }
-      });
-      
-      const duration = Math.random() * 1000 + 500;
-      await new Promise(resolve => setTimeout(resolve, duration));
-    } catch (error) {
-      // Silent fail
-    } finally {
-      this.isTyping = false;
-    }
-  }
 }
 
 // ============================================
@@ -180,10 +148,9 @@ class TypingSystem {
 // ============================================
 class SpamProtection {
   constructor() {
-    this.userMessageCounts = new Map();
     this.mutedUsers = new Map();
     this.messageTimestamps = new Map();
-    this.MAX_MESSAGES_PER_MINUTE = 60;
+    this.MAX_MESSAGES_PER_MINUTE = 7;
     this.MUTE_DURATION = 60000;
   }
 
@@ -200,7 +167,6 @@ class SpamProtection {
     
     if (validTimestamps.length >= this.MAX_MESSAGES_PER_MINUTE) {
       this.mutedUsers.set(userId, now + this.MUTE_DURATION);
-      console.log(`🔇 User ${userId} muted for 1 minute`);
       return false;
     }
     
@@ -230,142 +196,120 @@ class SpamProtection {
 }
 
 // ============================================
-// EMOJI & STICKER MANAGER
+// VOICE MESSAGE SYSTEM
 // ============================================
-class EmojiStickerManager {
+class VoiceMessageSystem {
   constructor() {
     this.dataPath = path.join(__dirname, 'data');
   }
 
-  async loadEmojiStickers() {
+  async loadVoiceKeywords() {
     try {
-      const emojiPath = path.join(this.dataPath, 'emoji_stickers.json');
-      const data = await fs.readFile(emojiPath, 'utf8');
-      return JSON.parse(data);
+      const voicePath = path.join(this.dataPath, 'voice_keywords.json');
+      const voiceData = await fs.readFile(voicePath, 'utf8');
+      return JSON.parse(voiceData);
     } catch (error) {
       return {
-        "keywords": {
-          "love": ["❤️", "😍", "🥰", "😘"],
-          "happy": ["😊", "😂", "😄", "🥳"],
-          "sad": ["😢", "😔", "😭", "🥺"],
-          "angry": ["😠", "😡", "🤬", "💢"],
-          "surprise": ["😮", "🤯", "😲", "🎉"]
-        },
-        "stickers": {
-          "funny": ["CAACAgQAAxkBAAIB...1"],
-          "love": ["CAACAgQAAxkBAAIB...2"],
-          "hello": ["CAACAgQAAxkBAAIB...3"]
-        }
+        "keywords": ["voice", "audio", "sing", "song", "গান", "ভয়েস", "music"],
+        "responses": [
+          "<blockquote><b>Voice message coming!</b> 🎵</blockquote>",
+          "<blockquote><i>Audio reply on the way...</i> 🎶</blockquote>",
+          "<blockquote><code>Sending voice...</code> 🎤</blockquote>"
+        ]
       };
     }
   }
 
-  getEmojiForKeyword(text) {
-    const emojiMap = {
-      "love": ["❤️", "😍", "🥰"],
-      "like": ["👍", "👌", "🤙"],
-      "happy": ["😊", "😄", "😂"],
-      "sad": ["😢", "😔", "🥺"],
-      "hi": ["👋", "🤗", "😊"],
-      "hello": ["👋", "🤗", "😊"]
-    };
-    
-    const lowerText = text.toLowerCase();
-    for (const [keyword, emojis] of Object.entries(emojiMap)) {
-      if (lowerText.includes(keyword)) {
-        return emojis[Math.floor(Math.random() * emojis.length)];
-      }
-    }
-    
-    const defaultEmojis = ["😊", "👍", "❤️", "🔥", "🎉", "😂"];
-    return defaultEmojis[Math.floor(Math.random() * defaultEmojis.length)];
+  containsVoiceKeyword(text) {
+    if (!text) return false;
+    const keywords = ['voice', 'audio', 'sing', 'song', 'গান', 'ভয়েস', 'music'];
+    return keywords.some(keyword => text.toLowerCase().includes(keyword));
+  }
+
+  getVoiceResponse() {
+    const responses = [
+      "<blockquote><b>Voice message coming!</b> 🎵</blockquote>",
+      "<blockquote><i>Audio reply on the way...</i> 🎶</blockquote>",
+      "<blockquote><code>Sending voice...</code> 🎤</blockquote>"
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 }
 
 // ============================================
-// VOICE MESSAGE MANAGER
+// STICKER/MEME SYSTEM
 // ============================================
-class VoiceMessageManager {
+class StickerMemeSystem {
   constructor() {
     this.dataPath = path.join(__dirname, 'data');
   }
 
-  async loadVoiceMessages() {
+  async loadStickerKeywords() {
     try {
-      const voicePath = path.join(this.dataPath, 'voice_messages.json');
-      const data = await fs.readFile(voicePath, 'utf8');
-      return JSON.parse(data);
+      const stickerPath = path.join(this.dataPath, 'sticker_keywords.json');
+      const stickerData = await fs.readFile(stickerPath, 'utf8');
+      return JSON.parse(stickerData);
     } catch (error) {
       return {
-        "keywords": {
-          "voice": ["voice_note_1.ogg", "voice_note_2.ogg"],
-          "sing": ["song_1.ogg", "song_2.ogg"],
-          "audio": ["audio_1.ogg", "audio_2.ogg"]
-        }
+        "keywords": ["sticker", "meme", "funny", "laugh", "স্টিকার", "মিম", "joke"],
+        "responses": [
+          "<blockquote><b>Here's a sticker!</b> 😄</blockquote>",
+          "<blockquote><i>Sending meme...</i> 🤣</blockquote>",
+          "<blockquote><code>Funny sticker coming...</code> 🎭</blockquote>"
+        ]
       };
     }
   }
 
-  getVoiceForKeyword(text) {
-    const voiceMap = {
-      "voice": "voice_note_1.ogg",
-      "sing": "song_1.ogg",
-      "song": "song_2.ogg",
-      "audio": "audio_1.ogg"
-    };
-    
-    const lowerText = text.toLowerCase();
-    for (const [keyword, voiceFile] of Object.entries(voiceMap)) {
-      if (lowerText.includes(keyword)) return voiceFile;
-    }
-    
-    return null;
+  containsStickerKeyword(text) {
+    if (!text) return false;
+    const keywords = ['sticker', 'meme', 'funny', 'laugh', 'স্টিকার', 'মিম', 'joke'];
+    return keywords.some(keyword => text.toLowerCase().includes(keyword));
+  }
+
+  getStickerResponse() {
+    const responses = [
+      "<blockquote><b>Here's a sticker!</b> 😄</blockquote>",
+      "<blockquote><i>Sending meme...</i> 🤣</blockquote>",
+      "<blockquote><code>Funny sticker coming...</code> 🎭</blockquote>"
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 }
 
 // ============================================
-// MEME STICKER MANAGER
+// EMOJI REPLY SYSTEM
 // ============================================
-class MemeStickerManager {
+class EmojiReplySystem {
   constructor() {
     this.dataPath = path.join(__dirname, 'data');
   }
 
-  async loadMemeStickers() {
+  async loadEmojiReplies() {
     try {
-      const memePath = path.join(this.dataPath, 'meme_stickers.json');
-      const data = await fs.readFile(memePath, 'utf8');
-      return JSON.parse(data);
+      const emojiPath = path.join(this.dataPath, 'emoji_replies.json');
+      const emojiData = await fs.readFile(emojiPath, 'utf8');
+      return JSON.parse(emojiData);
     } catch (error) {
       return {
-        "keywords": {
-          "meme": ["meme_sticker_1", "meme_sticker_2"],
-          "funny": ["funny_sticker_1", "funny_sticker_2"],
-          "laugh": ["laugh_sticker_1", "laugh_sticker_2"]
-        }
+        "unknown_message_emojis": ["😊", "🤔", "❤️", "👍", "🎉", "🔥", "😘", "👀", "✨", "😂"],
+        "auto_reply_chance": 0.2 // 20% chance
       };
     }
   }
 
-  getStickerForKeyword(text) {
-    const stickerMap = {
-      "meme": "meme_sticker_1",
-      "funny": "funny_sticker_1",
-      "laugh": "laugh_sticker_1",
-      "joke": "joke_sticker_1"
-    };
-    
-    const lowerText = text.toLowerCase();
-    for (const [keyword, sticker] of Object.entries(stickerMap)) {
-      if (lowerText.includes(keyword)) return sticker;
-    }
-    
-    return null;
+  getRandomEmoji() {
+    const emojis = ["😊", "🤔", "❤️", "👍", "🎉", "🔥", "😘", "👀", "✨", "😂"];
+    return emojis[Math.floor(Math.random() * emojis.length)];
+  }
+
+  shouldReplyToUnknown() {
+    return Math.random() < 0.2; // 20% chance
   }
 }
 
 // ============================================
-// DATA MANAGER - JSON থেকে সব লোড হবে
+// DATA MANAGER - ALL FEATURES
 // ============================================
 class DataManager {
   constructor() {
@@ -374,10 +318,12 @@ class DataManager {
     this.settings = {};
     this.borderSystem = new PerfectBorderSystem();
     this.spamProtection = new SpamProtection();
-    this.emojiManager = new EmojiStickerManager();
-    this.voiceManager = new VoiceMessageManager();
-    this.memeManager = new MemeStickerManager();
+    this.blockquoteSystem = new AutoBlockquoteSystem();
+    this.voiceSystem = new VoiceMessageSystem();
+    this.stickerSystem = new StickerMemeSystem();
+    this.emojiSystem = new EmojiReplySystem();
     this.dataPath = path.join(__dirname, 'data');
+    this.typingMessages = [];
   }
 
   async loadAllData() {
@@ -386,6 +332,10 @@ class DataManager {
       await this.borderSystem.loadBorders();
       await this.loadConfig();
       await this.loadAutoReplies();
+      await this.loadTypingMessages();
+      await this.loadVoiceKeywords();
+      await this.loadStickerKeywords();
+      await this.loadEmojiReplies();
       this.spamProtection.startCleanupTimer();
       console.log('✅ All data loaded successfully');
     } catch (error) {
@@ -405,14 +355,15 @@ class DataManager {
         reply_in_channels: false,
         use_borders: true,
         max_actions_per_minute: 50,
-        typing_min_delay: 800,
-        typing_max_delay: 4000,
+        typing_delay: 1000,
         log_level: 'info',
         auto_react: true,
+        typing_effect: true,
         auto_voice: true,
         auto_sticker: true,
-        auto_meme: true,
-        typing_effect: true
+        auto_emoji: true,
+        voice_reply: true,
+        sticker_reply: true
       };
       
       this.reactions = config.reactions || ['👍', '❤️', '🔥', '😂', '😮', '😢', '😡', '🎉', '🤔', '👏'];
@@ -437,6 +388,26 @@ class DataManager {
     }
   }
 
+  async loadTypingMessages() {
+    this.typingMessages = await this.blockquoteSystem.loadTypingMessages();
+    console.log(`✅ Loaded ${this.typingMessages.length} typing messages`);
+  }
+
+  async loadVoiceKeywords() {
+    this.voiceKeywords = await this.voiceSystem.loadVoiceKeywords();
+    console.log(`✅ Loaded ${this.voiceKeywords.keywords.length} voice keywords`);
+  }
+
+  async loadStickerKeywords() {
+    this.stickerKeywords = await this.stickerSystem.loadStickerKeywords();
+    console.log(`✅ Loaded ${this.stickerKeywords.keywords.length} sticker keywords`);
+  }
+
+  async loadEmojiReplies() {
+    this.emojiReplies = await this.emojiSystem.loadEmojiReplies();
+    console.log(`✅ Loaded ${this.emojiReplies.unknown_message_emojis.length} emoji replies`);
+  }
+
   async createDefaultFiles() {
     await this.createDefaultConfig();
     await this.createDefaultAutoReplies();
@@ -449,18 +420,17 @@ class DataManager {
         reply_in_channels: false,
         use_borders: true,
         max_actions_per_minute: 50,
-        typing_min_delay: 800,
-        typing_max_delay: 4000,
+        typing_delay: 1000,
         log_level: 'info',
         auto_react: true,
+        typing_effect: true,
         auto_voice: true,
         auto_sticker: true,
-        auto_meme: true,
-        typing_effect: true
+        auto_emoji: true,
+        voice_reply: true,
+        sticker_reply: true
       },
-      reactions: ['👍', '❤️', '🔥', '😂', '😮', '😢', '😡', '🎉', '🤔', '👏'],
-      voice_keywords: ['voice', 'audio', 'sing', 'song', 'গান', 'ভয়েস'],
-      sticker_keywords: ['sticker', 'meme', 'funny', 'laugh', 'স্টিকার', 'মিম']
+      reactions: ['👍', '❤️', '🔥', '😂', '😮', '😢', '😡', '🎉', '🤔', '👏']
     };
     
     this.settings = defaultConfig.settings;
@@ -476,25 +446,15 @@ class DataManager {
     return {
       "hi": ["<b>Hello!</b> 👋", "<i>Hi there!</i> 😊", "<code>Hey!</code> ❤️"],
       "hello": ["<b>Hi!</b> 😄", "<u>Hello!</u> 💖", "Hey there! 🌸"],
-      "test": ["<b>Test successful!</b> ✅", "<i>Working!</i> 🚀", "All good! 👍"],
       "i love you": ["<b>Love you too!</b> ❤️", "<i>Aww</i> 😘", "You're sweet! 💕"],
       "how are you": ["<b>I'm good!</b> 😊", "All good! 😄", "<u>Feeling great!</u> 🌟"],
       "бот": ["<b>Bot здесь!</b> 🤖", "<i>Привет!</i> 👋", "Да, я здесь! ✅"],
-      "ping": ["<b>Pong!</b> 🏓", "<i>Я жив!</i> 💖", "Активен! ✅"],
-      "бот проверка": ["<b>Проверка пройдена!</b> ✅", "Я здесь! 👍", "Работаю нормально! 🚀"],
-      "бот работаешь": ["<b>Работаю!</b> 💪", "Да, всё хорошо! ✅", "Всё в порядке! 🟢"],
       "салам": ["<b>Ва алейкум ассалам!</b> 🕌", "<i>Салам!</i> 👋", "Привет! 😊"],
       "привет": ["<b>Привет!</b> 👋", "Здравствуй! 😊", "Приветствую! 🌸"],
-      "спокойной ночи": ["<b>Спокойной ночи!</b> 🌙", "<i>Сладких снов!</i> 💤", "Доброй ночи! 😴"],
-      "доброе утро": ["<b>Доброе утро!</b> ☀️", "С добрым утром! 🌅", "<u>Утра доброго!</u> 😊"],
-      "что делаешь": ["<b>Отвечаю тебе!</b> 💬", "Думаю о тебе! 💖", "<i>Работаю!</i> 🤖"],
-      "скучаешь": ["<b>Да, скучаю!</b> 😔", "Конечно! 💕", "<u>Очень!</u> 😘"],
-      "good night": ["<b>Good night!</b> 🌙", "<i>Sweet dreams!</i> 💤", "Sleep well! 😴"],
       "good morning": ["<b>Good morning!</b> ☀️", "Morning! 🌅", "<u>Rise and shine!</u> 😊"],
-      "miss you": ["<b>Miss you too!</b> 😔", "Always! 💕", "So much! 😘"],
-      "voice": ["<b>Voice message coming!</b> 🎵", "<i>Sending audio...</i> 🎶"],
-      "sticker": ["<b>Here's a sticker!</b> 😄", "<i>Sending meme...</i> 🤣"],
-      "meme": ["<b>Meme incoming!</b> 😂", "<i>Funny sticker coming...</i> 🎭"]
+      "good night": ["<b>Good night!</b> 🌙", "<i>Sweet dreams!</i> 💤", "Sleep well! 😴"],
+      "voice": ["<b>Voice message!</b> 🎵", "<i>Audio coming...</i> 🎶"],
+      "sticker": ["<b>Sticker time!</b> 😄", "<i>Meme incoming...</i> 🤣"]
     };
   }
 
@@ -533,25 +493,39 @@ class DataManager {
     return this.borderSystem.createPerfectBorder(text);
   }
 
+  getRandomTypingMessage() {
+    if (this.typingMessages.length === 0) {
+      return "══════════════════════\n\n      <b>Typing...</b> 🤫\n\n     ══════════════════════";
+    }
+    return this.typingMessages[Math.floor(Math.random() * this.typingMessages.length)];
+  }
+
   canUserSendMessage(userId) {
     return this.spamProtection.canUserSend(userId);
   }
 
   containsVoiceKeyword(text) {
-    if (!text) return false;
-    const keywords = ['voice', 'audio', 'sing', 'song', 'গান', 'ভয়েস'];
-    return keywords.some(keyword => text.toLowerCase().includes(keyword));
+    return this.voiceSystem.containsVoiceKeyword(text);
   }
 
   containsStickerKeyword(text) {
-    if (!text) return false;
-    const keywords = ['sticker', 'meme', 'funny', 'laugh', 'স্টিকার', 'মিম'];
-    return keywords.some(keyword => text.toLowerCase().includes(keyword));
+    return this.stickerSystem.containsStickerKeyword(text);
+  }
+
+  getVoiceResponse() {
+    return this.voiceSystem.getVoiceResponse();
+  }
+
+  getStickerResponse() {
+    return this.stickerSystem.getStickerResponse();
   }
 
   getRandomEmoji() {
-    const emojis = ["😊", "🤔", "❤️", "👍", "🎉", "🔥", "😘", "👀", "✨", "😂"];
-    return emojis[Math.floor(Math.random() * emojis.length)];
+    return this.emojiSystem.getRandomEmoji();
+  }
+
+  shouldEmojiReply() {
+    return this.emojiSystem.shouldReplyToUnknown();
   }
 }
 
@@ -559,10 +533,9 @@ class DataManager {
 // MESSAGE HANDLER - ALL FEATURES
 // ============================================
 class MessageHandler {
-  constructor(client, dataManager, typingSystem) {
+  constructor(client, dataManager) {
     this.client = client;
     this.data = dataManager;
-    this.typing = typingSystem;
     this.lastActionTime = 0;
     this.cooldownPeriod = 1000;
     this.stats = {
@@ -621,35 +594,33 @@ class MessageHandler {
       const text = message.message.toLowerCase().trim();
       const replyText = this.data.findReply(message.message);
       
-      // 1. টাইপিং ইফেক্ট দেখাবে (যদি enable থাকে)
-      if (this.data.getSetting('typing_effect', true)) {
-        await this.showTypingEffect(message.chatId);
-        this.stats.typingEffects++;
-      }
-      
-      // 2. সব মেসেজে রিয়েক্ট দিবে
+      // 1. সব মেসেজে রিয়েক্ট দিবে
       if (this.data.getSetting('auto_react', true)) {
         await this.handleAutoReact(message);
       }
       
-      // 3. যদি রিপ্লাই থাকে তবে দিবে
+      // 2. Voice keyword check
+      if (this.data.getSetting('voice_reply', true) && this.data.containsVoiceKeyword(text)) {
+        await this.handleVoiceReply(message);
+        this.lastActionTime = Date.now();
+        return;
+      }
+      
+      // 3. Sticker keyword check
+      if (this.data.getSetting('sticker_reply', true) && this.data.containsStickerKeyword(text)) {
+        await this.handleStickerReply(message);
+        this.lastActionTime = Date.now();
+        return;
+      }
+      
+      // 4. যদি রিপ্লাই থাকে
       if (replyText) {
-        await this.handleTextReply(message, replyText);
+        await this.handleTextReplyWithTyping(message, replyText);
       } else {
-        // রিপ্লাই না থাকলে random emoji দিতে পারে
-        if (Math.random() < 0.3) {
+        // রিপ্লাই না থাকলে emoji দিতে পারে
+        if (this.data.getSetting('auto_emoji', true) && this.data.shouldEmojiReply()) {
           await this.handleEmojiReply(message);
         }
-      }
-      
-      // 4. Voice keyword check
-      if (this.data.getSetting('auto_voice', true) && this.data.containsVoiceKeyword(text)) {
-        await this.handleVoiceReply(message);
-      }
-      
-      // 5. Sticker/Meme keyword check
-      if (this.data.getSetting('auto_sticker', true) && this.data.containsStickerKeyword(text)) {
-        await this.handleStickerReply(message);
       }
       
       this.lastActionTime = Date.now();
@@ -662,48 +633,60 @@ class MessageHandler {
     }
   }
 
-  async showTypingEffect(chatId) {
+  async handleTextReplyWithTyping(message, replyText) {
+    let sentMessage = null;
+    
     try {
-      await this.client.invoke({
-        _: 'messages.setTyping',
-        peer: await this.client.getInputEntity(chatId),
-        action: { _: 'sendMessageTypingAction' }
-      });
+      // 1. টাইপিং মেসেজ সেন্ড করবে
+      if (this.data.getSetting('typing_effect', true)) {
+        const typingMessage = this.data.getRandomTypingMessage();
+        sentMessage = await this.client.sendMessage(message.chatId, {
+          message: typingMessage,
+          parseMode: 'html'
+        });
+        
+        const typingDelay = this.data.getSetting('typing_delay', 1000);
+        await new Promise(resolve => setTimeout(resolve, typingDelay));
+        
+        this.stats.typingEffects++;
+      }
       
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
-    } catch (error) {
-      // Silent fail
-    }
-  }
-
-  async handleTextReply(message, replyText) {
-    try {
-      let formattedReply = replyText;
+      // 2. ফাইনাল রিপ্লাই তৈরি করবে (auto blockquote + border)
+      let finalMessage = replyText;
       
-      // Apply border if enabled
       if (this.data.getSetting('use_borders', true)) {
-        formattedReply = this.data.formatWithBorder(replyText);
+        finalMessage = this.data.formatWithBorder(replyText);
         this.stats.bordersUsed++;
+      } else {
+        finalMessage = `<blockquote>${replyText}</blockquote>`;
       }
       
       // Add mention in groups
-      let finalMessage = formattedReply;
       if ((message.isGroup || message.isChannel) && message.senderId) {
         try {
           const sender = await this.client.getEntity(message.senderId);
           if (sender) {
             const mention = `<a href="tg://user?id=${sender.id}">${sender.firstName || ''}</a>`;
-            finalMessage = `${mention}\n\n${formattedReply}`;
+            finalMessage = `${mention}\n\n${finalMessage}`;
           }
         } catch (error) {
           // Continue without mention
         }
       }
       
-      await this.client.sendMessage(message.chatId, {
-        message: finalMessage,
-        parseMode: 'html'
-      });
+      // 3. এডিট করবে বা নতুন মেসেজ সেন্ড করবে
+      if (sentMessage) {
+        await this.client.editMessage(message.chatId, {
+          message: sentMessage.id,
+          text: finalMessage,
+          parseMode: 'html'
+        });
+      } else {
+        await this.client.sendMessage(message.chatId, {
+          message: finalMessage,
+          parseMode: 'html'
+        });
+      }
       
       this.stats.responsesSent++;
       if (message.isGroup) this.stats.groupReplies++;
@@ -714,6 +697,16 @@ class MessageHandler {
       
     } catch (error) {
       console.error('Reply error:', error.message);
+      // Fallback: সরাসরি মেসেজ সেন্ড করবে
+      try {
+        const finalMessage = `<blockquote>${replyText}</blockquote>`;
+        await this.client.sendMessage(message.chatId, {
+          message: finalMessage,
+          parseMode: 'html'
+        });
+      } catch (sendError) {
+        // Silent fail
+      }
     }
   }
 
@@ -735,11 +728,20 @@ class MessageHandler {
 
   async handleVoiceReply(message) {
     try {
+      const voiceResponse = this.data.getVoiceResponse();
+      let finalMessage = voiceResponse;
+      
+      if (this.data.getSetting('use_borders', true)) {
+        finalMessage = this.data.formatWithBorder(voiceResponse);
+      }
+      
       await this.client.sendMessage(message.chatId, {
-        message: "🎵 <b>Voice message feature!</b>\n<i>Audio reply would be sent here</i>",
+        message: finalMessage,
         parseMode: 'html'
       });
+      
       this.stats.voiceReplies++;
+      console.log(`🎵 Voice reply sent to ${message.chatId}`);
     } catch (error) {
       // Silent fail
     }
@@ -747,11 +749,20 @@ class MessageHandler {
 
   async handleStickerReply(message) {
     try {
+      const stickerResponse = this.data.getStickerResponse();
+      let finalMessage = stickerResponse;
+      
+      if (this.data.getSetting('use_borders', true)) {
+        finalMessage = this.data.formatWithBorder(stickerResponse);
+      }
+      
       await this.client.sendMessage(message.chatId, {
-        message: "😄 <b>Sticker/Meme feature!</b>\n<i>Funny sticker would be sent here</i>",
+        message: finalMessage,
         parseMode: 'html'
       });
+      
       this.stats.stickerReplies++;
+      console.log(`😂 Sticker reply sent to ${message.chatId}`);
     } catch (error) {
       // Silent fail
     }
@@ -763,7 +774,9 @@ class MessageHandler {
       await this.client.sendMessage(message.chatId, {
         message: emoji
       });
+      
       this.stats.emojiReplies++;
+      console.log(`😊 Emoji reply sent to ${message.chatId}`);
     } catch (error) {
       // Silent fail
     }
@@ -777,7 +790,7 @@ async function main() {
   console.log('='.repeat(60));
   console.log(`🤖 ${BOT_NAME} - COMPLETE USERBOT`);
   console.log('='.repeat(60));
-  console.log(`📅 Version: 11.0.0 - ALL FEATURES`);
+  console.log(`📅 Version: 13.0.0 - ALL FEATURES`);
   console.log(`🌟 Status: FULLY LOADED`);
   console.log('='.repeat(60));
   
@@ -792,8 +805,7 @@ async function main() {
     requestRetries: 3
   });
   
-  const typingSystem = new TypingSystem(client);
-  const messageHandler = new MessageHandler(client, dataManager, typingSystem);
+  const messageHandler = new MessageHandler(client, dataManager);
   
   try {
     console.log('\n🔗 Connecting to Telegram...');
@@ -809,7 +821,7 @@ async function main() {
       await messageHandler.handleNewMessage(event);
     }, new NewMessage({ incoming: true }));
     
-    console.log('\n✅ Event handlers registered successfully!');
+    console.log('\n✅ Event handlers registered!');
     console.log('👂 Bot is now listening for messages...');
     
     const server = http.createServer((req, res) => {
@@ -829,15 +841,16 @@ async function main() {
     });
     
     console.log('\n✨ ALL FEATURES ACTIVE:');
-    console.log('   ✓ Typing effect');
+    console.log('   ✓ Auto Blockquote (all replies)');
+    console.log('   ✓ Typing effect with edit');
     console.log('   ✓ Auto reaction on every message');
+    console.log('   ✓ Voice reply (keyword based)');
+    console.log('   ✓ Sticker/Meme reply (keyword based)');
+    console.log('   ✓ Emoji reply (20% chance)');
     console.log('   ✓ Smart border system');
-    console.log('   ✓ HTML formatting support');
-    console.log('   ✓ Auto voice reply');
-    console.log('   ✓ Auto sticker/meme reply');
-    console.log('   ✓ Auto emoji reply');
     console.log('   ✓ Spam protection (7/min)');
     console.log('   ✓ Bot message ignoring');
+    console.log('   ✓ HTML formatting support');
     console.log('   ✓ JSON file loading');
     console.log('   ✓ Rate limiting');
     console.log('   ✓ Health check endpoint');
@@ -847,11 +860,10 @@ async function main() {
       const uptime = process.uptime();
       const hours = Math.floor(uptime / 3600);
       const minutes = Math.floor((uptime % 3600) / 60);
-      const seconds = Math.floor(uptime % 60);
       
       console.log('\n📊 SYSTEM STATUS:');
-      console.log('─'.repeat(40));
-      console.log(`⏰ Uptime: ${hours}h ${minutes}m ${seconds}s`);
+      console.log('─'.repeat(45));
+      console.log(`⏰ Uptime: ${hours}h ${minutes}m`);
       console.log(`📨 Messages: ${messageHandler.stats.messagesReceived}`);
       console.log(`📤 Replies: ${messageHandler.stats.responsesSent}`);
       console.log(`⭐ Reactions: ${messageHandler.stats.reactionsSent}`);
@@ -863,14 +875,13 @@ async function main() {
       console.log(`🔇 Spam blocked: ${messageHandler.stats.spamBlocked}`);
       console.log(`🤖 Bot ignored: ${messageHandler.stats.botMessagesIgnored}`);
       console.log(`❌ Errors: ${messageHandler.stats.errors}`);
-      console.log('─'.repeat(40));
+      console.log('─'.repeat(45));
     }, 300000);
     
     process.on('SIGTERM', async () => {
       console.log('\n🛑 Shutting down gracefully...');
       await client.disconnect();
       console.log('✅ Disconnected from Telegram');
-      console.log('👋 Goodbye!');
       process.exit(0);
     });
     
@@ -878,7 +889,6 @@ async function main() {
       console.log('\n🛑 Shutting down gracefully...');
       await client.disconnect();
       console.log('✅ Disconnected from Telegram');
-      console.log('👋 Goodbye!');
       process.exit(0);
     });
     
@@ -886,9 +896,6 @@ async function main() {
     
   } catch (error) {
     console.error('\n❌ STARTUP FAILED:', error.message);
-    if (error.message.includes('AUTH_KEY')) {
-      console.error('\n⚠️ SESSION STRING ERROR');
-    }
     process.exit(1);
   }
 }
