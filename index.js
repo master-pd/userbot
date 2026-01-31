@@ -1,6 +1,6 @@
 // ============================================
 // YOUR CRUSH Userbot - Main Application
-// FINAL WORKING VERSION - NO ERRORS
+// ULTIMATE FINAL VERSION - PERFECT BORDERS
 // ============================================
 
 const { TelegramClient } = require('telegram');
@@ -12,7 +12,7 @@ const path = require('path');
 const http = require('http');
 
 // ============================================
-// CONFIGURATION FROM RENDER ENVIRONMENT VARIABLES
+// CONFIGURATION
 // ============================================
 const API_ID = parseInt(process.env.API_ID) || 0;
 const API_HASH = process.env.API_HASH || '';
@@ -31,27 +31,20 @@ const USE_BORDERS = process.env.USE_BORDERS === 'true' || true;
 // ============================================
 // VALIDATION
 // ============================================
-console.log('🔍 Checking environment variables...');
-console.log(`API_ID: ${API_ID ? '✅' : '❌'}`);
-console.log(`API_HASH: ${API_HASH ? '✅ (****' + API_HASH.slice(-4) + ')' : '❌'}`);
-console.log(`SESSION_STRING: ${SESSION_STRING ? `✅ (${SESSION_STRING.length} chars)` : '❌'}`);
-
 if (!API_ID || !API_HASH || !SESSION_STRING) {
   console.error('❌ FATAL: Missing required environment variables!');
   process.exit(1);
 }
 
 // ============================================
-// HTTP SERVER FOR RENDER HEALTH CHECKS
+// HTTP SERVER
 // ============================================
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({
     status: 'online',
     bot: BOT_NAME,
-    service: 'Telegram Userbot',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
+    uptime: process.uptime()
   }));
 });
 
@@ -60,68 +53,150 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 // ============================================
-// DATA MANAGER CLASS - SIMPLIFIED AND WORKING
+// PERFECT BORDER GENERATOR
+// ============================================
+class PerfectBorder {
+  constructor() {
+    this.borderStyles = [];
+    this.loadBorderStyles();
+  }
+
+  loadBorderStyles() {
+    this.borderStyles = [
+      {
+        name: "Double Line",
+        topLeft: "╔", top: "═", topRight: "╗",
+        left: "║", right: "║",
+        bottomLeft: "╚", bottom: "═", bottomRight: "╝"
+      },
+      {
+        name: "Single Line",
+        topLeft: "┌", top: "─", topRight: "┐",
+        left: "│", right: "│",
+        bottomLeft: "└", bottom: "─", bottomRight: "┘"
+      },
+      {
+        name: "Rounded",
+        topLeft: "╭", top: "─", topRight: "╮",
+        left: "│", right: "│",
+        bottomLeft: "╰", bottom: "─", bottomRight: "╯"
+      },
+      {
+        name: "Thick",
+        topLeft: "▛", top: "▀", topRight: "▜",
+        left: "▌", right: "▐",
+        bottomLeft: "▙", bottom: "▄", bottomRight: "▟"
+      },
+      {
+        name: "Bold",
+        topLeft: "┏", top: "━", topRight: "┓",
+        left: "┃", right: "┃",
+        bottomLeft: "┗", bottom: "━", bottomRight: "┛"
+      },
+      {
+        name: "Star",
+        topLeft: "✦", top: "─", topRight: "✦",
+        left: "│", right: "│",
+        bottomLeft: "✦", bottom: "─", bottomRight: "✦"
+      },
+      {
+        name: "Dotted",
+        topLeft: "·", top: "·", topRight: "·",
+        left: "·", right: "·",
+        bottomLeft: "·", bottom: "·", bottomRight: "·"
+      }
+    ];
+  }
+
+  generatePerfectBorder(text) {
+    if (!USE_BORDERS || text.trim() === '') {
+      return text;
+    }
+
+    // Select random border style
+    const style = this.borderStyles[Math.floor(Math.random() * this.borderStyles.length)];
+    
+    // Split text into lines
+    const lines = text.split('\n');
+    
+    // Find the longest line (considering emojis as 1 char for width)
+    let maxLength = 0;
+    lines.forEach(line => {
+      // Remove emojis for width calculation (they display as 1 char)
+      const cleanLine = line.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, ' ');
+      if (cleanLine.length > maxLength) maxLength = cleanLine.length;
+    });
+    
+    // Add padding
+    const padding = 2;
+    const totalWidth = maxLength + (padding * 2);
+    
+    // Create top border
+    const topBorder = style.topLeft + style.top.repeat(totalWidth) + style.topRight;
+    
+    // Create bottom border
+    const bottomBorder = style.bottomLeft + style.bottom.repeat(totalWidth) + style.bottomRight;
+    
+    // Create content lines
+    const contentLines = [];
+    
+    // Add top padding
+    contentLines.push(style.left + ' '.repeat(totalWidth) + style.right);
+    
+    // Add text lines with padding
+    lines.forEach(line => {
+      const lineLength = line.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, ' ').length;
+      const leftPadding = Math.floor((totalWidth - lineLength) / 2);
+      const rightPadding = totalWidth - lineLength - leftPadding;
+      
+      const contentLine = style.left + 
+                         ' '.repeat(leftPadding) + 
+                         line + 
+                         ' '.repeat(rightPadding) + 
+                         style.right;
+      contentLines.push(contentLine);
+    });
+    
+    // Add bottom padding
+    contentLines.push(style.left + ' '.repeat(totalWidth) + style.right);
+    
+    // Combine everything
+    const result = [topBorder, ...contentLines, bottomBorder];
+    return result.join('\n');
+  }
+}
+
+// ============================================
+// DATA MANAGER
 // ============================================
 class DataManager {
   constructor() {
     this.replies = {};
     this.reactions = ['👍', '❤️', '🔥', '😂', '😮', '😢', '😡', '🎉', '🤔', '👏'];
-    this.borders = [];
-    this.currentBorderIndex = 0;
+    this.borderGenerator = new PerfectBorder();
   }
 
   async loadAllData() {
     try {
-      // Create data directory if it doesn't exist
+      // Create data directory
       try {
         await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
-      } catch (e) {
-        // Directory already exists
-      }
+      } catch (e) {}
 
-      // Load reply patterns
+      // Load replies
       const replyPath = path.join(__dirname, 'data', 'reply.json');
       try {
         const replyData = await fs.readFile(replyPath, 'utf8');
         this.replies = JSON.parse(replyData);
-        console.log(`✅ Loaded ${Object.keys(this.replies).length} reply patterns`);
       } catch (e) {
-        console.log('📝 Creating default reply.json...');
         this.replies = this.getDefaultReplies();
         await fs.writeFile(replyPath, JSON.stringify(this.replies, null, 2));
       }
-      
-      // Load borders - FIXED: Handle string array properly
-      const borderPath = path.join(__dirname, 'data', 'border.json');
-      try {
-        const borderData = await fs.readFile(borderPath, 'utf8');
-        const parsed = JSON.parse(borderData);
-        
-        if (Array.isArray(parsed)) {
-          // If border.json contains direct array
-          this.borders = parsed;
-        } else if (parsed.borders && Array.isArray(parsed.borders)) {
-          // If border.json has {borders: []} format
-          this.borders = parsed.borders;
-        } else {
-          throw new Error('Invalid format');
-        }
-        
-        console.log(`✅ Loaded ${this.borders.length} borders`);
-        
-        // Verify all borders are strings
-        this.borders = this.borders.filter(border => typeof border === 'string');
-        
-      } catch (e) {
-        console.log('🎨 Creating default border.json...');
-        this.borders = this.getDefaultBorders();
-        await fs.writeFile(borderPath, JSON.stringify(this.borders, null, 2));
-      }
-      
+
+      console.log(`✅ Loaded ${Object.keys(this.replies).length} replies`);
     } catch (error) {
       console.error('❌ Error loading data:', error.message);
       this.replies = this.getDefaultReplies();
-      this.borders = this.getDefaultBorders();
     }
   }
 
@@ -137,30 +212,19 @@ class DataManager {
     };
   }
 
-  getDefaultBorders() {
-    return [
-      "┏━━━━━━━━━━━━━━┓\n┃              ┃\n┃              ┃\n┃              ┃\n┗━━━━━━━━━━━━━━┛",
-      "╔══════════════╗\n║              ║\n║              ║\n║              ║\n╚══════════════╝",
-      "╭──────────────╮\n│              │\n│              │\n│              │\n╰──────────────╯",
-      "▛▀▀▀▀▀▀▀▀▀▀▀▀▜\n▌              ▐\n▌              ▐\n▌              ▐\n▙▄▄▄▄▄▄▄▄▄▄▄▄▟",
-      "┌──────────────┐\n│              │\n│              │\n│              │\n└──────────────┘",
-      "✦──────────────✦\n│              │\n│              │\n│              │\n✦──────────────✦"
-    ];
-  }
-
   findReply(message) {
     if (!message || typeof message !== 'string') return null;
     
     const msg = message.toLowerCase().trim();
     if (msg.length === 0) return null;
     
-    // 1. Exact match
+    // Exact match
     if (this.replies[msg]) {
       const replies = this.replies[msg];
       return replies[Math.floor(Math.random() * replies.length)];
     }
     
-    // 2. Word-by-word match
+    // Word match
     const words = msg.split(/\s+/);
     for (const word of words) {
       if (word.length > 2 && this.replies[word]) {
@@ -169,126 +233,20 @@ class DataManager {
       }
     }
     
-    // 3. No match found
     return null;
   }
 
   getRandomReaction() {
-    if (this.reactions.length === 0) return '👍';
     return this.reactions[Math.floor(Math.random() * this.reactions.length)];
   }
 
-  getNextBorder() {
-    if (this.borders.length === 0) {
-      this.borders = this.getDefaultBorders();
-    }
-    
-    const border = this.borders[this.currentBorderIndex];
-    this.currentBorderIndex = (this.currentBorderIndex + 1) % this.borders.length;
-    return border;
-  }
-
-  // SIMPLIFIED BORDER FORMATTING THAT WORKS
   formatWithBorder(text) {
-    if (!USE_BORDERS || this.borders.length === 0) {
-      return text;
-    }
-    
-    const border = this.getNextBorder();
-    
-    // Ensure border is a string
-    if (typeof border !== 'string') {
-      return text;
-    }
-    
-    const borderLines = border.split('\n');
-    
-    // Simple box border with 5 lines
-    if (borderLines.length === 5) {
-      const textLines = text.split('\n');
-      const maxTextLines = Math.min(textLines.length, 3);
-      
-      // Create new border with text in middle
-      const result = [];
-      result.push(borderLines[0]); // Top border
-      
-      // Calculate where to put text (line 2 or 3 depending on text length)
-      if (maxTextLines === 1) {
-        // Single line - put in middle line (line 3)
-        const centeredLine = this.centerTextInLine(textLines[0], borderLines[2]);
-        result.push(borderLines[1]); // Empty line
-        result.push(centeredLine);   // Text line
-        result.push(borderLines[3]); // Empty line
-      } else if (maxTextLines === 2) {
-        // Two lines - put in lines 2 and 3
-        const line1 = this.centerTextInLine(textLines[0], borderLines[2]);
-        const line2 = this.centerTextInLine(textLines[1], borderLines[2]);
-        result.push(line1);          // First text line
-        result.push(line2);          // Second text line
-        result.push(borderLines[3]); // Empty line
-      } else {
-        // Three lines - use all middle lines
-        for (let i = 0; i < 3; i++) {
-          const line = i < textLines.length ? 
-            this.centerTextInLine(textLines[i], borderLines[2]) : 
-            borderLines[2];
-          result.push(line);
-        }
-      }
-      
-      result.push(borderLines[4]); // Bottom border
-      return result.join('\n');
-    }
-    
-    // Fallback: simple border wrap
-    return `${border}\n${text}\n${border}`;
-  }
-
-  centerTextInLine(text, borderLine) {
-    // Extract border characters from sides
-    const leftChar = this.getLeftBorderChar(borderLine);
-    const rightChar = this.getRightBorderChar(borderLine);
-    
-    const borderLength = leftChar.length + rightChar.length;
-    const availableWidth = borderLine.length - borderLength;
-    
-    // Calculate text width (approx)
-    const textWidth = text.length; // Simplified
-    
-    if (textWidth >= availableWidth) {
-      // Text too long, use as is with borders
-      return leftChar + text.slice(0, availableWidth) + rightChar;
-    }
-    
-    const leftPadding = Math.floor((availableWidth - textWidth) / 2);
-    const rightPadding = availableWidth - textWidth - leftPadding;
-    
-    return leftChar + ' '.repeat(leftPadding) + text + ' '.repeat(rightPadding) + rightChar;
-  }
-
-  getLeftBorderChar(line) {
-    if (!line || line.length === 0) return '';
-    // Common left border characters
-    const leftChars = ['┃', '║', '│', '▌', '▐', '┊', '╠', '╞', '├'];
-    for (const char of leftChars) {
-      if (line.startsWith(char)) return char;
-    }
-    return line[0] || '';
-  }
-
-  getRightBorderChar(line) {
-    if (!line || line.length === 0) return '';
-    // Common right border characters
-    const rightChars = ['┃', '║', '│', '▌', '▐', '┊', '╣', '╡', '┤'];
-    for (const char of rightChars) {
-      if (line.endsWith(char)) return char;
-    }
-    return line[line.length - 1] || '';
+    return this.borderGenerator.generatePerfectBorder(text);
   }
 }
 
 // ============================================
-// TYPING SYSTEM CLASS
+// TYPING SYSTEM
 // ============================================
 class TypingSystem {
   constructor(client) {
@@ -313,11 +271,10 @@ class TypingSystem {
         action: { _: 'sendMessageTypingAction' }
       });
       
-      const duration = this.getRandomDelay();
-      await new Promise(resolve => setTimeout(resolve, duration));
+      await new Promise(resolve => setTimeout(resolve, this.getRandomDelay()));
       
     } catch (error) {
-      // Silent fail
+      // Ignore
     } finally {
       this.isTyping = false;
     }
@@ -325,7 +282,7 @@ class TypingSystem {
 }
 
 // ============================================
-// RATE LIMITER CLASS
+// RATE LIMITER
 // ============================================
 class RateLimiter {
   constructor(maxPerMinute = 50) {
@@ -336,13 +293,10 @@ class RateLimiter {
 
   canPerformAction() {
     const now = Date.now();
-    
-    // Clean old timestamps
     this.actionTimestamps = this.actionTimestamps.filter(
       timestamp => now - timestamp < this.windowMs
     );
     
-    // Check limit
     if (this.actionTimestamps.length < this.maxPerMinute) {
       this.actionTimestamps.push(now);
       return true;
@@ -361,7 +315,7 @@ class RateLimiter {
 }
 
 // ============================================
-// MESSAGE HANDLER CLASS
+// MESSAGE HANDLER - WITH GROUP BORDER SUPPORT
 // ============================================
 class MessageHandler {
   constructor(client, dataManager, typingSystem, rateLimiter) {
@@ -376,27 +330,24 @@ class MessageHandler {
       responsesSent: 0,
       errors: 0,
       groupReplies: 0,
-      privateReplies: 0
+      privateReplies: 0,
+      bordersUsed: 0
     };
   }
 
   async shouldProcessMessage(message) {
-    // Check if valid message
     if (!message || !message.message || message.message.trim() === '') {
       return false;
     }
     
-    // Skip own messages
     if (message.out) {
       return false;
     }
     
-    // Check rate limit
     if (!this.rateLimiter.canPerformAction()) {
       return false;
     }
     
-    // Check cooldown
     const now = Date.now();
     if (now - this.lastActionTime < this.cooldownPeriod) {
       return false;
@@ -424,15 +375,30 @@ class MessageHandler {
         await this.typing.simulateTyping(message.chatId);
       }
       
-      // Apply border
+      // Apply border to ALL messages (groups included)
       let formattedReply = replyText;
       if (USE_BORDERS) {
         formattedReply = this.data.formatWithBorder(replyText);
+        this.stats.bordersUsed++;
+      }
+      
+      // Add mention for groups
+      if ((message.isGroup || message.isChannel) && message.senderId) {
+        try {
+          const sender = await this.client.getEntity(message.senderId);
+          if (sender) {
+            const mention = `<a href="tg://user?id=${sender.id}">${sender.firstName || ''}</a>`;
+            formattedReply = `${mention}\n\n${formattedReply}`;
+          }
+        } catch (error) {
+          // Ignore
+        }
       }
       
       // Send reply
       await this.client.sendMessage(message.chatId, {
-        message: formattedReply
+        message: formattedReply,
+        parseMode: 'html'
       });
       
       this.lastActionTime = Date.now();
@@ -447,10 +413,10 @@ class MessageHandler {
       
       // Log
       const chatType = message.isGroup ? 'GROUP' : (message.isChannel ? 'CHANNEL' : 'PRIVATE');
-      console.log(`💌 [${chatType}] Replied to ${message.chatId}: ${replyText.substring(0, 30)}...`);
+      console.log(`💌 [${chatType}] Replied to ${message.chatId}`);
       
-      // Random reaction
-      if (Math.random() < 0.25 && this.rateLimiter.canPerformAction() && !message.isGroup && !message.isChannel) {
+      // Random reaction (private only)
+      if (Math.random() < 0.25 && !message.isGroup && !message.isChannel) {
         try {
           const reaction = this.data.getRandomReaction();
           await this.client.invoke(new Api.messages.SendReaction({
@@ -479,12 +445,11 @@ async function main() {
   console.log('='.repeat(60));
   console.log(`🚀 ${BOT_NAME} - Telegram Userbot`);
   console.log('='.repeat(60));
-  console.log(`Version: 4.0.0 - FINAL WORKING`);
-  console.log(`All Features: ✅ WORKING`);
-  console.log(`Borders: ${USE_BORDERS ? '✅ TEXT INSIDE' : '❌ DISABLED'}`);
+  console.log(`Version: 5.0.0 - ULTIMATE FINAL`);
+  console.log(`Perfect Borders: ✅ DYNAMIC`);
+  console.log(`Group Borders: ✅ ENABLED`);
   console.log('='.repeat(60));
   
-  // Initialize Telegram Client
   const stringSession = new StringSession(SESSION_STRING);
   const client = new TelegramClient(stringSession, API_ID, API_HASH, {
     connectionRetries: 5,
@@ -492,7 +457,6 @@ async function main() {
     autoReconnect: true
   });
   
-  // Initialize systems
   const dataManager = new DataManager();
   await dataManager.loadAllData();
   
@@ -501,12 +465,10 @@ async function main() {
   const messageHandler = new MessageHandler(client, dataManager, typingSystem, rateLimiter);
   
   try {
-    // Connect to Telegram
     console.log('\n🔗 Connecting to Telegram...');
     await client.connect();
     console.log('✅ Connected!');
     
-    // Get user info
     const me = await client.getMe();
     console.log(`👤 User: ${me.firstName || ''}${me.lastName ? ' ' + me.lastName : ''}`);
     console.log(`📱 Username: @${me.username || 'N/A'}`);
@@ -520,15 +482,18 @@ async function main() {
     console.log('\n✅ Event handler ready');
     console.log('👂 Listening for messages...');
     
-    // Show sample output
-    console.log('\n📦 SAMPLE BORDER OUTPUT:');
-    const sample = dataManager.formatWithBorder("Hello! 👋");
-    console.log(sample);
+    // Show perfect border examples
+    console.log('\n📦 PERFECT BORDER EXAMPLES:');
+    console.log(dataManager.formatWithBorder("Hello! 👋"));
+    console.log('');
+    console.log(dataManager.formatWithBorder("I love you! ❤️"));
+    console.log('');
+    console.log(dataManager.formatWithBorder("How are you? 😊"));
     console.log('\n' + '='.repeat(60));
     
     // Status monitor
     setInterval(() => {
-      const uptime = process.uptime();
+      const uptime = Math.floor(process.uptime());
       const hours = Math.floor(uptime / 3600);
       const minutes = Math.floor((uptime % 3600) / 60);
       
@@ -538,13 +503,23 @@ async function main() {
       console.log(`   Replies: ${messageHandler.stats.responsesSent}`);
       console.log(`   Private: ${messageHandler.stats.privateReplies}`);
       console.log(`   Groups: ${messageHandler.stats.groupReplies}`);
+      console.log(`   Borders: ${messageHandler.stats.bordersUsed}`);
       console.log('─'.repeat(40));
     }, 300000);
     
     console.log('\n' + '='.repeat(60));
     console.log(`✅ ${BOT_NAME} is ONLINE!`);
     console.log('='.repeat(60));
-    console.log('\n💡 Test by sending: hi, hello, test, ping, бот');
+    console.log('\n✨ FEATURES:');
+    console.log('   • Perfect dynamic borders ✅');
+    console.log('   • Borders in groups ✅');
+    console.log('   • Auto-resize to text ✅');
+    console.log('   • All four sides complete ✅');
+    console.log('   • Random border styles ✅');
+    console.log('   • HTML formatting ✅');
+    console.log('   • Typing simulation ✅');
+    console.log('   • Random reactions ✅');
+    console.log('   • Rate limiting ✅');
     console.log('='.repeat(60));
     
     // Keep alive
@@ -552,7 +527,6 @@ async function main() {
     
   } catch (error) {
     console.error('❌ Startup failed:', error.message);
-    console.error('Full error:', error);
     process.exit(1);
   }
 }
