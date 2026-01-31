@@ -1,5 +1,5 @@
 // ============================================
-// YOUR CRUSH Userbot - RENDER OPTIMIZED
+// YOUR CRUSH Userbot - RENDER OPTIMIZED FIXED
 // ============================================
 
 const { TelegramClient } = require('telegram');
@@ -50,31 +50,24 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 // ============================================
-// RENDER-OPTIMIZED TELEGRAM CLIENT
+// FIXED TELEGRAM CLIENT (NO CONNECTION PARAM)
 // ============================================
 const stringSession = new StringSession(SESSION_STRING);
 
-// CRITICAL: Render-optimized settings
+// FIXED: Connection parameter removed
 const client = new TelegramClient(stringSession, API_ID, API_HASH, {
-  connectionRetries: 15,           // Increased for Render
-  timeout: 30,                     // 30 seconds timeout
-  useWSS: true,                    // Use WebSocket Secure
-  autoReconnect: true,             // Auto-reconnect enabled
-  requestRetries: 5,               // Request retries
-  useIPV6: false,                  // Disable IPv6 (Render issues)
-  floodSleepThreshold: 120,        // Higher flood threshold
-  deviceModel: 'Render Server',    // Device info
-  systemVersion: 'Node.js',        // System
-  appVersion: '2.0.0',             // App version
-  langCode: 'en',                  // Language
-  systemLangCode: 'en',            // System language
-  // Connection parameters
-  connection: {
-    transport: 'websocket',
-    wsOptions: {
-      origin: 'https://web.telegram.org'
-    }
-  }
+  connectionRetries: 10,
+  timeout: 30,
+  useWSS: true,
+  autoReconnect: true,
+  requestRetries: 3,
+  useIPV6: false,
+  floodSleepThreshold: 60,
+  deviceModel: 'Render Server',
+  systemVersion: 'Node.js',
+  appVersion: '1.0.0',
+  langCode: 'en',
+  systemLangCode: 'en',
 });
 
 // ============================================
@@ -136,53 +129,51 @@ class DataManager {
 }
 
 // ============================================
-// CONNECTION MANAGER WITH RETRY LOGIC
+// CONNECTION MANAGER
 // ============================================
 class ConnectionManager {
   constructor(client) {
     this.client = client;
-    this.connected = false;
-    this.reconnectAttempts = 0;
-    this.maxReconnects = 20;
+    this.isConnected = false;
   }
 
-  async connect() {
-    console.log('🔗 Attempting to connect to Telegram...');
+  async connectWithRetry(maxRetries = 10) {
+    let retries = 0;
     
-    try {
-      await this.client.connect();
-      this.connected = true;
-      this.reconnectAttempts = 0;
-      console.log('✅ Successfully connected to Telegram!');
-      return true;
-    } catch (error) {
-      this.reconnectAttempts++;
-      console.error(`❌ Connection failed (attempt ${this.reconnectAttempts}):`, error.message);
-      
-      if (this.reconnectAttempts < this.maxReconnects) {
-        const delay = Math.min(this.reconnectAttempts * 3000, 15000);
-        console.log(`⏳ Retrying in ${delay/1000} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return this.connect();
+    while (retries < maxRetries) {
+      try {
+        console.log(`🔗 Connection attempt ${retries + 1}/${maxRetries}...`);
+        await this.client.connect();
+        this.isConnected = true;
+        console.log('✅ Successfully connected to Telegram!');
+        return true;
+      } catch (error) {
+        retries++;
+        console.error(`❌ Connection failed: ${error.message}`);
+        
+        if (retries < maxRetries) {
+          const delay = Math.min(retries * 2000, 10000);
+          console.log(`⏳ Retrying in ${delay/1000} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-      
-      console.error('❌ Max reconnection attempts reached');
-      return false;
     }
+    
+    return false;
   }
 
   async keepAlive() {
     setInterval(async () => {
-      if (this.connected) {
+      if (this.isConnected) {
         try {
           await this.client.invoke(new Api.ping({ pingId: BigInt(Date.now()) }));
         } catch (error) {
-          console.log('⚠️ Keep-alive failed, reconnecting...');
-          this.connected = false;
-          await this.connect();
+          console.log('⚠️ Keep-alive failed, will reconnect...');
+          this.isConnected = false;
+          await this.connectWithRetry(3);
         }
       }
-    }, 45000); // Every 45 seconds
+    }, 30000);
   }
 }
 
@@ -201,17 +192,17 @@ class MessageHandler {
   canRespond(chatId) {
     const now = Date.now();
     
-    // Per-chat cooldown (2 seconds)
+    // Per-chat cooldown
     const lastTime = this.cooldown.get(chatId) || 0;
     if (now - lastTime < 2000) return false;
     
-    // Global rate limit (30 per minute)
+    // Global rate limit
     if (now - this.resetTime > 60000) {
       this.actionCount = 0;
       this.resetTime = now;
     }
     
-    if (this.actionCount >= 30) return false;
+    if (this.actionCount >= 25) return false;
     
     this.cooldown.set(chatId, now);
     this.actionCount++;
@@ -232,14 +223,13 @@ class MessageHandler {
         const replyText = this.data.findReply(message.message);
         if (replyText) {
           // Simulate typing
-          const typingDelay = 800 + Math.random() * 2000;
-          await new Promise(resolve => setTimeout(resolve, typingDelay));
+          await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
           
           // Send message
           await this.client.sendMessage(chatId, { message: replyText });
           console.log(`💬 Replied to ${chatId}`);
           
-          // Random reaction (25% chance)
+          // Random reaction
           if (Math.random() < 0.25) {
             try {
               const reaction = this.data.getRandomReaction();
@@ -250,54 +240,24 @@ class MessageHandler {
                 reaction: [{ _: 'reactionEmoji', emoticon: reaction }]
               });
             } catch (error) {
-              // Ignore reaction errors
+              // Ignore
             }
           }
         }
       }
     } catch (error) {
-      console.error('Message handling error:', error.message);
+      console.error('Message error:', error.message);
     }
   }
 }
 
 // ============================================
-// HEALTH MONITOR
-// ============================================
-class HealthMonitor {
-  constructor() {
-    this.startTime = Date.now();
-    this.messageCount = 0;
-    this.responseCount = 0;
-  }
-  
-  incrementMessages() { this.messageCount++; }
-  incrementResponses() { this.responseCount++; }
-  
-  getStatus() {
-    const uptime = Date.now() - this.startTime;
-    const hours = Math.floor(uptime / 3600000);
-    const minutes = Math.floor((uptime % 3600000) / 60000);
-    
-    return {
-      botName: BOT_NAME,
-      uptime: `${hours}h ${minutes}m`,
-      messages: this.messageCount,
-      responses: this.responseCount,
-      responseRate: this.messageCount > 0 ? 
-        ((this.responseCount / this.messageCount) * 100).toFixed(1) + '%' : '0%'
-    };
-  }
-}
-
-// ============================================
-// MAIN APPLICATION
+// MAIN FUNCTION
 // ============================================
 async function main() {
   console.log('='.repeat(50));
   console.log(`🚀 ${BOT_NAME} - Starting on Render`);
   console.log('='.repeat(50));
-  console.log('Render Optimized Version 2.0');
   console.log(`Port: ${PORT}`);
   console.log('='.repeat(50));
   
@@ -306,12 +266,10 @@ async function main() {
   await dataManager.loadData();
   
   const connectionManager = new ConnectionManager(client);
-  const messageHandler = new MessageHandler(client, dataManager);
-  const healthMonitor = new HealthMonitor();
   
   try {
-    // Connect to Telegram with retry
-    const connected = await connectionManager.connect();
+    // Connect to Telegram
+    const connected = await connectionManager.connectWithRetry();
     if (!connected) {
       throw new Error('Failed to connect to Telegram');
     }
@@ -326,36 +284,20 @@ async function main() {
     await connectionManager.keepAlive();
     
     // Setup message handler
+    const messageHandler = new MessageHandler(client, dataManager);
     client.addEventHandler((event) => {
-      healthMonitor.incrementMessages();
       messageHandler.handleMessage(event);
     });
     
-    // Log status periodically
-    setInterval(() => {
-      const status = healthMonitor.getStatus();
-      console.log('\n📊 Health Check:');
-      console.log(`   Uptime: ${status.uptime}`);
-      console.log(`   Messages: ${status.messages}`);
-      console.log(`   Responses: ${status.responses}`);
-      console.log(`   Response Rate: ${status.responseRate}`);
-      console.log('─'.repeat(30));
-    }, 300000); // Every 5 minutes
-    
     console.log('\n' + '='.repeat(50));
-    console.log(`✅ ${BOT_NAME} is ONLINE and READY!`);
+    console.log(`✅ ${BOT_NAME} is ONLINE!`);
     console.log('='.repeat(50));
-    console.log('\n📋 Features:');
-    console.log(`   • Auto-reply to private messages`);
-    console.log(`   • Smart reply matching`);
-    console.log(`   • Reaction support`);
-    console.log(`   • Rate limiting (30/min)`);
-    console.log(`   • Auto-reconnect`);
+    console.log('\n📋 Ready to receive messages');
     console.log('='.repeat(50));
     
     // Graceful shutdown
-    const shutdown = async () => {
-      console.log('\n🛑 Shutdown signal received...');
+    process.on('SIGTERM', async () => {
+      console.log('\n🛑 Shutting down...');
       try {
         await client.disconnect();
         server.close();
@@ -364,23 +306,32 @@ async function main() {
         console.error('Shutdown error:', error.message);
       }
       process.exit(0);
-    };
+    });
     
-    process.on('SIGTERM', shutdown);
-    process.on('SIGINT', shutdown);
+    process.on('SIGINT', async () => {
+      console.log('\n🛑 Shutting down...');
+      try {
+        await client.disconnect();
+        server.close();
+        console.log('✅ Clean shutdown completed');
+      } catch (error) {
+        console.error('Shutdown error:', error.message);
+      }
+      process.exit(0);
+    });
     
     // Heartbeat
     setInterval(() => {
-      console.log('💓 Bot heartbeat - All systems normal');
+      console.log('💓 Bot is running...');
     }, 60000);
     
   } catch (error) {
     console.error('❌ Startup failed:', error.message);
     
-    // Auto-restart after 30 seconds
-    console.log('🔄 Auto-restart in 30 seconds...');
+    // Restart after delay
+    console.log('🔄 Restarting in 30 seconds...');
     setTimeout(() => {
-      console.log('🔄 Restarting bot...');
+      console.log('🔄 Restarting...');
       main().catch(err => {
         console.error('Restart failed:', err.message);
         process.exit(1);
@@ -389,5 +340,5 @@ async function main() {
   }
 }
 
-// Start the application
+// Start the bot
 main();
