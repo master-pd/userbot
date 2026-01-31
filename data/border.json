@@ -1,22 +1,6 @@
 [
-  {
-    "name": "Double Line",
-    "top": "══════",
-    "bottom": "══════"
-  },
-  {
-    "name": "Single Line",
-    "top": "──────",
-    "bottom": "──────"
-  },
-  {
-    "name": "Star Style",
-    "top": "✦────✦",
-    "bottom": "✦────✦"
-  },
-  {
-    "name": "Heart Style",
-    "top": "❤️────❤️",
-    "bottom": "❤️────❤️"
-  }
+  {"name": "Double Line", "top": "═══", "bottom": "═══"},
+  {"name": "Single Line", "top": "───", "bottom": "───"},
+  {"name": "Star Style", "top": "✦──", "bottom": "──✦"},
+  {"name": "Heart Style", "top": "❤️─", "bottom": "─❤️"}
 ]
