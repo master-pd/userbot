@@ -1,0 +1,14 @@
+node_modules/
+npm-debug.log*
+.env
+*.session
+.json
+!data/.json
+!package.json
+!package-lock.json
+.DS_Store
+.idea/
+.vscode/
+temp/
+voices/
+videos/
