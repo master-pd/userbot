@@ -1,6 +1,5 @@
 // ============================================
-// YOUR CRUSH Userbot - Main Application
-// Optimized for Render Web Service
+// YOUR CRUSH Userbot - RENDER OPTIMIZED
 // ============================================
 
 const { TelegramClient } = require('telegram');
@@ -11,122 +10,75 @@ const path = require('path');
 const http = require('http');
 
 // ============================================
-// CONFIGURATION FROM RENDER ENVIRONMENT VARIABLES
+// CONFIGURATION
 // ============================================
 const API_ID = parseInt(process.env.API_ID);
 const API_HASH = process.env.API_HASH;
 const SESSION_STRING = process.env.SESSION_STRING;
-const BOT_NAME = process.env.BOT_NAME || "𝗬𝗢𝗨𝗥 𝗖𝗥𝗨𝗦𝗛 ⟵𝗼_𝟬";
-const OWNER_ID = parseInt(process.env.OWNER_ID) || 0;
-const MAX_ACTIONS_PER_MINUTE = parseInt(process.env.MAX_ACTIONS_PER_MINUTE) || 30; // Reduced
-const TYPING_MIN_DELAY = parseInt(process.env.TYPING_MIN_DELAY) || 1000; // Increased
-const TYPING_MAX_DELAY = parseInt(process.env.TYPING_MAX_DELAY) || 5000; // Increased
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+const BOT_NAME = process.env.BOT_NAME || "𝗬𝗢𝗨𝗥 𝗖𝗥𝗨𝗦𝗛";
 const PORT = process.env.PORT || 3000;
 
 // ============================================
 // VALIDATION
 // ============================================
 if (!API_ID || !API_HASH || !SESSION_STRING) {
-  console.error('❌ FATAL: Missing required environment variables!');
+  console.error('❌ FATAL: Missing environment variables');
+  console.error('Required: API_ID, API_HASH, SESSION_STRING');
   process.exit(1);
 }
 
 // ============================================
-// HTTP SERVER FOR RENDER (REQUIRED)
+// HTTP SERVER FOR RENDER
 // ============================================
-function startHttpServer() {
-  const server = http.createServer((req, res) => {
-    if (req.url === '/health' || req.url === '/') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        status: 'online',
-        bot: BOT_NAME,
-        service: 'Telegram Userbot',
-        uptime: process.uptime(),
-        platform: 'Render',
-        timestamp: new Date().toISOString()
-      }));
-    } else {
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.end(`${BOT_NAME} is running`);
-    }
-  });
-
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🌐 HTTP Server: Port ${PORT}`);
-  });
-
-  return server;
-}
-
-// ============================================
-// ENHANCED CONNECTION MANAGER
-// ============================================
-class ConnectionManager {
-  constructor(client) {
-    this.client = client;
-    this.connected = false;
-    this.reconnectCount = 0;
-    this.maxReconnects = 15;
+const server = http.createServer((req, res) => {
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'online',
+      bot: BOT_NAME,
+      service: 'Telegram Userbot',
+      timestamp: new Date().toISOString()
+    }));
+  } else {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Bot is running');
   }
+});
 
-  async connectWithRetry() {
-    console.log('🔗 Connecting to Telegram...');
-    
-    // Optimized connection settings for Render
-    const connectionParams = {
-      connectionRetries: 10,
-      timeout: 25,
-      useWSS: true,
-      autoReconnect: true,
-      requestRetries: 3,
-      useIPV6: false,
-      floodSleepThreshold: 60,
-      deviceModel: 'Render Server',
-      systemVersion: 'Node.js',
-      appVersion: '2.0.0',
-      langCode: 'en',
-      systemLangCode: 'en',
-    };
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ HTTP Server started on port ${PORT}`);
+});
 
-    try {
-      await this.client.connect();
-      this.connected = true;
-      this.reconnectCount = 0;
-      console.log('✅ Connected to Telegram');
-      return true;
-    } catch (error) {
-      this.reconnectCount++;
-      console.error(`❌ Connection failed (${this.reconnectCount}/${this.maxReconnects}):`, error.message);
-      
-      if (this.reconnectCount < this.maxReconnects) {
-        const delay = Math.min(5000 * this.reconnectCount, 30000);
-        console.log(`⏳ Retrying in ${delay/1000}s...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return this.connectWithRetry();
-      }
-      return false;
+// ============================================
+// RENDER-OPTIMIZED TELEGRAM CLIENT
+// ============================================
+const stringSession = new StringSession(SESSION_STRING);
+
+// CRITICAL: Render-optimized settings
+const client = new TelegramClient(stringSession, API_ID, API_HASH, {
+  connectionRetries: 15,           // Increased for Render
+  timeout: 30,                     // 30 seconds timeout
+  useWSS: true,                    // Use WebSocket Secure
+  autoReconnect: true,             // Auto-reconnect enabled
+  requestRetries: 5,               // Request retries
+  useIPV6: false,                  // Disable IPv6 (Render issues)
+  floodSleepThreshold: 120,        // Higher flood threshold
+  deviceModel: 'Render Server',    // Device info
+  systemVersion: 'Node.js',        // System
+  appVersion: '2.0.0',             // App version
+  langCode: 'en',                  // Language
+  systemLangCode: 'en',            // System language
+  // Connection parameters
+  connection: {
+    transport: 'websocket',
+    wsOptions: {
+      origin: 'https://web.telegram.org'
     }
   }
-
-  async keepAlive() {
-    setInterval(async () => {
-      if (this.connected) {
-        try {
-          await this.client.invoke(new Api.ping({ pingId: BigInt(Date.now()) }));
-        } catch (error) {
-          console.log('⚠️ Keep-alive failed, will reconnect');
-          this.connected = false;
-          await this.connectWithRetry();
-        }
-      }
-    }, 45000);
-  }
-}
+});
 
 // ============================================
-// DATA MANAGER CLASS
+// DATA MANAGER
 // ============================================
 class DataManager {
   constructor() {
@@ -134,19 +86,22 @@ class DataManager {
     this.reactions = ['👍', '❤️', '🔥', '😂', '😮', '😢', '😡', '🎉', '🤔', '👏'];
   }
 
-  async loadAllData() {
+  async loadData() {
     try {
       const replyPath = path.join(__dirname, 'data', 'reply.json');
       const replyData = await fs.readFile(replyPath, 'utf8');
       this.replies = JSON.parse(replyData);
       console.log(`✅ Loaded ${Object.keys(this.replies).length} reply patterns`);
     } catch (error) {
-      console.error('❌ Error loading reply data:', error.message);
+      console.error('❌ Error loading replies:', error.message);
       this.replies = {
         "hi": ["Hello!", "Hi there!", "Hey!"],
         "hello": ["Hi!", "Hello!", "Hey there!"],
         "how are you": ["I'm good!", "Doing well!", "All good!"],
-        "test": ["Test successful!", "Working!", "✅"]
+        "test": ["Test successful!", "Working!", "✅"],
+        "i love you": ["Aww ❤️", "Love you too!", "You're sweet!"],
+        "good morning": ["Good morning!", "Morning! ☀️", "Have a great day!"],
+        "good night": ["Good night!", "Sweet dreams! 🌙", "Sleep well!"]
       };
     }
   }
@@ -157,13 +112,13 @@ class DataManager {
     const msg = message.toLowerCase().trim();
     if (msg.length < 2) return null;
     
-    // Exact match
+    // 1. Exact match
     if (this.replies[msg]) {
       const replies = this.replies[msg];
       return replies[Math.floor(Math.random() * replies.length)];
     }
     
-    // Word match
+    // 2. Word match
     const words = msg.split(/\s+/);
     for (const word of words) {
       if (word.length > 2 && this.replies[word]) {
@@ -181,33 +136,84 @@ class DataManager {
 }
 
 // ============================================
-// SIMPLIFIED MESSAGE HANDLER
+// CONNECTION MANAGER WITH RETRY LOGIC
+// ============================================
+class ConnectionManager {
+  constructor(client) {
+    this.client = client;
+    this.connected = false;
+    this.reconnectAttempts = 0;
+    this.maxReconnects = 20;
+  }
+
+  async connect() {
+    console.log('🔗 Attempting to connect to Telegram...');
+    
+    try {
+      await this.client.connect();
+      this.connected = true;
+      this.reconnectAttempts = 0;
+      console.log('✅ Successfully connected to Telegram!');
+      return true;
+    } catch (error) {
+      this.reconnectAttempts++;
+      console.error(`❌ Connection failed (attempt ${this.reconnectAttempts}):`, error.message);
+      
+      if (this.reconnectAttempts < this.maxReconnects) {
+        const delay = Math.min(this.reconnectAttempts * 3000, 15000);
+        console.log(`⏳ Retrying in ${delay/1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.connect();
+      }
+      
+      console.error('❌ Max reconnection attempts reached');
+      return false;
+    }
+  }
+
+  async keepAlive() {
+    setInterval(async () => {
+      if (this.connected) {
+        try {
+          await this.client.invoke(new Api.ping({ pingId: BigInt(Date.now()) }));
+        } catch (error) {
+          console.log('⚠️ Keep-alive failed, reconnecting...');
+          this.connected = false;
+          await this.connect();
+        }
+      }
+    }, 45000); // Every 45 seconds
+  }
+}
+
+// ============================================
+// MESSAGE HANDLER
 // ============================================
 class MessageHandler {
   constructor(client, dataManager) {
     this.client = client;
     this.data = dataManager;
-    this.lastAction = new Map();
+    this.cooldown = new Map();
     this.actionCount = 0;
-    this.actionResetTime = Date.now();
+    this.resetTime = Date.now();
   }
 
   canRespond(chatId) {
     const now = Date.now();
-    const last = this.lastAction.get(chatId) || 0;
     
-    // Per-chat cooldown
-    if (now - last < 2000) return false;
+    // Per-chat cooldown (2 seconds)
+    const lastTime = this.cooldown.get(chatId) || 0;
+    if (now - lastTime < 2000) return false;
     
-    // Global rate limit
-    if (now - this.actionResetTime > 60000) {
+    // Global rate limit (30 per minute)
+    if (now - this.resetTime > 60000) {
       this.actionCount = 0;
-      this.actionResetTime = now;
+      this.resetTime = now;
     }
     
-    if (this.actionCount >= MAX_ACTIONS_PER_MINUTE) return false;
+    if (this.actionCount >= 30) return false;
     
-    this.lastAction.set(chatId, now);
+    this.cooldown.set(chatId, now);
     this.actionCount++;
     return true;
   }
@@ -215,35 +221,35 @@ class MessageHandler {
   async handleMessage(event) {
     try {
       const message = event.message;
-      if (!message || !message.message) return;
+      if (!message || !message.message || !message.chat) return;
       
-      // Only respond to private messages
-      if (message.chat && message.chat.className === 'PeerUser') {
-        if (!this.canRespond(message.chatId)) return;
+      // Only private messages
+      if (message.chat.className === 'PeerUser') {
+        const chatId = message.chatId;
+        
+        if (!this.canRespond(chatId)) return;
         
         const replyText = this.data.findReply(message.message);
         if (replyText) {
           // Simulate typing
-          await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+          const typingDelay = 800 + Math.random() * 2000;
+          await new Promise(resolve => setTimeout(resolve, typingDelay));
           
-          // Send reply
-          await this.client.sendMessage(message.chatId, {
-            message: replyText
-          });
+          // Send message
+          await this.client.sendMessage(chatId, { message: replyText });
+          console.log(`💬 Replied to ${chatId}`);
           
-          console.log(`💬 Replied to ${message.chatId}`);
-          
-          // Optional reaction
+          // Random reaction (25% chance)
           if (Math.random() < 0.25) {
             try {
               const reaction = this.data.getRandomReaction();
               await this.client.invoke({
                 _: 'messages.sendReaction',
-                peer: await this.client.getInputEntity(message.chatId),
+                peer: await this.client.getInputEntity(chatId),
                 msgId: message.id,
                 reaction: [{ _: 'reactionEmoji', emoticon: reaction }]
               });
-            } catch (e) {
+            } catch (error) {
               // Ignore reaction errors
             }
           }
@@ -256,50 +262,58 @@ class MessageHandler {
 }
 
 // ============================================
+// HEALTH MONITOR
+// ============================================
+class HealthMonitor {
+  constructor() {
+    this.startTime = Date.now();
+    this.messageCount = 0;
+    this.responseCount = 0;
+  }
+  
+  incrementMessages() { this.messageCount++; }
+  incrementResponses() { this.responseCount++; }
+  
+  getStatus() {
+    const uptime = Date.now() - this.startTime;
+    const hours = Math.floor(uptime / 3600000);
+    const minutes = Math.floor((uptime % 3600000) / 60000);
+    
+    return {
+      botName: BOT_NAME,
+      uptime: `${hours}h ${minutes}m`,
+      messages: this.messageCount,
+      responses: this.responseCount,
+      responseRate: this.messageCount > 0 ? 
+        ((this.responseCount / this.messageCount) * 100).toFixed(1) + '%' : '0%'
+    };
+  }
+}
+
+// ============================================
 // MAIN APPLICATION
 // ============================================
 async function main() {
   console.log('='.repeat(50));
   console.log(`🚀 ${BOT_NAME} - Starting on Render`);
   console.log('='.repeat(50));
-  console.log(`Render Web Service Optimized`);
+  console.log('Render Optimized Version 2.0');
   console.log(`Port: ${PORT}`);
   console.log('='.repeat(50));
   
-  // Start HTTP server (required by Render)
-  const httpServer = startHttpServer();
-  
-  // Initialize Telegram client with enhanced settings
-  const stringSession = new StringSession(SESSION_STRING);
-  const client = new TelegramClient(stringSession, API_ID, API_HASH, {
-    connectionRetries: 10,
-    timeout: 25,
-    useWSS: true,
-    autoReconnect: true,
-    requestRetries: 3,
-    useIPV6: false,
-    floodSleepThreshold: 60,
-    deviceModel: 'Render Server',
-    systemVersion: 'Node.js',
-    appVersion: '2.0.0',
-    langCode: 'en',
-    systemLangCode: 'en',
-  });
-  
   // Initialize components
-  const connectionManager = new ConnectionManager(client);
   const dataManager = new DataManager();
-  await dataManager.loadAllData();
+  await dataManager.loadData();
   
+  const connectionManager = new ConnectionManager(client);
   const messageHandler = new MessageHandler(client, dataManager);
+  const healthMonitor = new HealthMonitor();
   
   try {
-    // Connect with retry mechanism
-    console.log('🔄 Starting connection process...');
-    const connected = await connectionManager.connectWithRetry();
-    
+    // Connect to Telegram with retry
+    const connected = await connectionManager.connect();
     if (!connected) {
-      throw new Error('Could not connect to Telegram after retries');
+      throw new Error('Failed to connect to Telegram');
     }
     
     // Get user info
@@ -311,35 +325,43 @@ async function main() {
     // Setup keep-alive
     await connectionManager.keepAlive();
     
-    // Setup message handler with error handling
+    // Setup message handler
     client.addEventHandler((event) => {
+      healthMonitor.incrementMessages();
       messageHandler.handleMessage(event);
-    }, {
-      onError: (error) => {
-        console.error('Event handler error:', error.message);
-      }
     });
     
-    // Success message
+    // Log status periodically
+    setInterval(() => {
+      const status = healthMonitor.getStatus();
+      console.log('\n📊 Health Check:');
+      console.log(`   Uptime: ${status.uptime}`);
+      console.log(`   Messages: ${status.messages}`);
+      console.log(`   Responses: ${status.responses}`);
+      console.log(`   Response Rate: ${status.responseRate}`);
+      console.log('─'.repeat(30));
+    }, 300000); // Every 5 minutes
+    
     console.log('\n' + '='.repeat(50));
-    console.log(`✅ ${BOT_NAME} is ONLINE!`);
+    console.log(`✅ ${BOT_NAME} is ONLINE and READY!`);
     console.log('='.repeat(50));
-    console.log('\n📊 Status:');
-    console.log(`   • HTTP Server: Port ${PORT}`);
-    console.log(`   • Telegram: Connected`);
-    console.log(`   • Reply Patterns: ${Object.keys(dataManager.replies).length}`);
-    console.log(`   • Rate Limit: ${MAX_ACTIONS_PER_MINUTE}/minute`);
+    console.log('\n📋 Features:');
+    console.log(`   • Auto-reply to private messages`);
+    console.log(`   • Smart reply matching`);
+    console.log(`   • Reaction support`);
+    console.log(`   • Rate limiting (30/min)`);
+    console.log(`   • Auto-reconnect`);
     console.log('='.repeat(50));
     
-    // Handle shutdown
+    // Graceful shutdown
     const shutdown = async () => {
       console.log('\n🛑 Shutdown signal received...');
       try {
         await client.disconnect();
-        httpServer.close();
+        server.close();
         console.log('✅ Clean shutdown completed');
-      } catch (e) {
-        console.error('Shutdown error:', e.message);
+      } catch (error) {
+        console.error('Shutdown error:', error.message);
       }
       process.exit(0);
     };
@@ -349,25 +371,23 @@ async function main() {
     
     // Heartbeat
     setInterval(() => {
-      if (LOG_LEVEL === 'debug') {
-        console.log('💓 Bot heartbeat');
-      }
+      console.log('💓 Bot heartbeat - All systems normal');
     }, 60000);
     
   } catch (error) {
     console.error('❌ Startup failed:', error.message);
     
-    // Try to restart after delay
-    console.log('🔄 Restarting in 15 seconds...');
+    // Auto-restart after 30 seconds
+    console.log('🔄 Auto-restart in 30 seconds...');
     setTimeout(() => {
-      console.log('🔄 Attempting restart...');
-      main().catch(e => {
-        console.error('Restart failed:', e.message);
+      console.log('🔄 Restarting bot...');
+      main().catch(err => {
+        console.error('Restart failed:', err.message);
         process.exit(1);
       });
-    }, 15000);
+    }, 30000);
   }
 }
 
-// Start application
+// Start the application
 main();
