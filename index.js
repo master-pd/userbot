@@ -25,6 +25,9 @@ const TYPING_MIN_DELAY = parseInt(process.env.TYPING_MIN_DELAY) || 800;
 const TYPING_MAX_DELAY = parseInt(process.env.TYPING_MAX_DELAY) || 4000;
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
 const PORT = process.env.PORT || 3000;
+const REPLY_IN_GROUPS = process.env.REPLY_IN_GROUPS === 'true' || true;
+const REPLY_IN_CHANNELS = process.env.REPLY_IN_CHANNELS === 'true' || false;
+const USE_BORDERS = process.env.USE_BORDERS === 'true' || true;
 
 // ============================================
 // VALIDATION
@@ -58,7 +61,7 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 // ============================================
-// DATA MANAGER CLASS
+// DATA MANAGER CLASS (UPDATED WITH BORDERS)
 // ============================================
 class DataManager {
   constructor() {
@@ -66,6 +69,8 @@ class DataManager {
     this.reactions = ['👍', '❤️', '🔥', '😂', '😮', '😢', '😡', '🎉', '🤔', '👏'];
     this.voices = [];
     this.videos = [];
+    this.borders = [];
+    this.currentBorderIndex = 0;
   }
 
   async loadAllData() {
@@ -86,6 +91,22 @@ class DataManager {
         }
       } catch (e) {
         console.log('⚠️ Using default reactions');
+      }
+      
+      // Load borders
+      const borderPath = path.join(__dirname, 'data', 'border.json');
+      try {
+        const borderData = await fs.readFile(borderPath, 'utf8');
+        const parsed = JSON.parse(borderData);
+        if (parsed.borders && Array.isArray(parsed.borders)) {
+          this.borders = parsed.borders;
+          console.log(`✅ Loaded ${this.borders.length} borders`);
+        } else {
+          throw new Error('Invalid border.json format');
+        }
+      } catch (e) {
+        console.log('⚠️ Using default borders');
+        this.borders = this.getDefaultBorders();
       }
       
       // Load voices
@@ -122,8 +143,26 @@ class DataManager {
         "i love you": ["Love you too! ❤️", "Aww 😘", "You're sweet! 💕"],
         "how are you": ["I'm good! 😊", "All good! 😄", "Feeling great! 🌟"]
       };
+      this.borders = this.getDefaultBorders();
       console.log('⚠️ Using default data due to error');
     }
+  }
+
+  getDefaultBorders() {
+    return [
+      "╔═╦╗\n║ ║║\n╠═╬╣\n║ ║║\n╚═╩╝",
+      "┌─┐\n│ │\n├─┤\n│ │\n└─┘",
+      "╭─╮\n│ │\n├─┤\n│ │\n╰─╯",
+      "▛▀▀▜\n▌ ▐\n▌ ▐\n▙▄▄▟",
+      "▗▄▄▖\n▐   ▌\n▐   ▌\n▝▀▀▘",
+      "✦────────✦\n│         │\n│         │\n│         │\n✦────────✦",
+      "•·.·´¯`·.·•\n   ✨  \n•·.·`¯´·.·•",
+      "༻✦༺  ༻✦༺\n   🎀  \n༻✦༺  ༻✦༺",
+      "┏━━━┓\n┃   ┃\n┗━━━┛",
+      "【｡‿｡】\n   💖  \n【｡‿｡】",
+      "░░░░░░░\n▓▓▓▓▓▓▓\n░░░░░░░",
+      "◤━━━━━◥\n┊       ┊\n◣━━━━━◢"
+    ];
   }
 
   findReply(message) {
@@ -154,6 +193,39 @@ class DataManager {
   getRandomReaction() {
     if (this.reactions.length === 0) return '👍';
     return this.reactions[Math.floor(Math.random() * this.reactions.length)];
+  }
+
+  getNextBorder() {
+    if (this.borders.length === 0) {
+      this.borders = this.getDefaultBorders();
+    }
+    
+    const border = this.borders[this.currentBorderIndex];
+    
+    // Move to next border (circular)
+    this.currentBorderIndex = (this.currentBorderIndex + 1) % this.borders.length;
+    
+    return border;
+  }
+
+  getRandomBorder() {
+    if (this.borders.length === 0) {
+      this.borders = this.getDefaultBorders();
+    }
+    
+    return this.borders[Math.floor(Math.random() * this.borders.length)];
+  }
+
+  formatWithBorder(text) {
+    if (!USE_BORDERS || this.borders.length === 0) {
+      return text;
+    }
+    
+    const border = this.getNextBorder();
+    const lines = text.split('\n');
+    
+    // Simple border wrapping
+    return `${border}\n${lines.map(line => `   ${line}`).join('\n')}\n${border}`;
   }
 }
 
@@ -231,7 +303,7 @@ class RateLimiter {
 }
 
 // ============================================
-// MESSAGE HANDLER
+// MESSAGE HANDLER CLASS (UPDATED WITH BORDERS)
 // ============================================
 class MessageHandler {
   constructor(client, dataManager, typingSystem, rateLimiter) {
@@ -244,7 +316,10 @@ class MessageHandler {
     this.stats = {
       messagesReceived: 0,
       responsesSent: 0,
-      errors: 0
+      errors: 0,
+      groupReplies: 0,
+      privateReplies: 0,
+      bordersUsed: 0
     };
   }
 
@@ -255,12 +330,12 @@ class MessageHandler {
     }
     
     // Skip if from bot
-    if (message.out) {
+    if (message.sender && message.sender.bot) {
       return false;
     }
     
-    // Only private messages
-    if (message.isGroup || message.isChannel) {
+    // Skip own messages
+    if (message.out) {
       return false;
     }
     
@@ -292,19 +367,59 @@ class MessageHandler {
         return; // No matching reply - stay silent
       }
       
-      // Simulate typing
-      await this.typing.simulateTyping(message.chatId);
+      // Typing simulation only in private chats
+      if (!message.isGroup && !message.isChannel) {
+        await this.typing.simulateTyping(message.chatId);
+      }
+      
+      // Apply border to reply text
+      let formattedReply = replyText;
+      if (USE_BORDERS) {
+        formattedReply = this.data.formatWithBorder(replyText);
+        this.stats.bordersUsed++;
+      }
+      
+      // Check if it's a group message and needs mention
+      let replyMessage = formattedReply;
+      let sendOptions = {
+        message: replyMessage,
+        parseMode: new Api.TextParseModeHTML()
+      };
+      
+      // If it's a group/channel and message has a sender, mention the user
+      if ((message.isGroup || message.isChannel) && message.senderId) {
+        try {
+          const sender = await this.client.getEntity(message.senderId);
+          if (sender) {
+            const mention = `<a href="tg://user?id=${sender.id}">${sender.firstName || ''}</a>`;
+            replyMessage = `${mention}\n\n${formattedReply}`;
+            sendOptions.message = replyMessage;
+          }
+        } catch (error) {
+          // Continue without mention if can't get user
+        }
+      }
       
       // Send reply
-      await this.client.sendMessage(message.chatId, {
-        message: replyText
-      });
+      await this.client.invoke(
+        new Api.messages.SendMessage({
+          peer: message.chatId,
+          ...sendOptions
+        })
+      );
       
       this.lastActionTime = Date.now();
       this.stats.responsesSent++;
       
-      // Random reaction (25% chance)
-      if (Math.random() < 0.25 && this.rateLimiter.canPerformAction()) {
+      // Update stats based on chat type
+      if (message.isGroup) {
+        this.stats.groupReplies++;
+      } else if (!message.isChannel) {
+        this.stats.privateReplies++;
+      }
+      
+      // Random reaction (25% chance) - only in private chats
+      if (Math.random() < 0.25 && this.rateLimiter.canPerformAction() && !message.isGroup && !message.isChannel) {
         const reaction = this.data.getRandomReaction();
         try {
           await this.client.invoke({
@@ -318,7 +433,9 @@ class MessageHandler {
         }
       }
       
-      console.log(`💌 Replied to ${message.chatId}: ${replyText.substring(0, 30)}...`);
+      // Log message
+      const chatType = message.isGroup ? 'GROUP' : (message.isChannel ? 'CHANNEL' : 'PRIVATE');
+      console.log(`💌 [${chatType}] Replied to ${message.chatId} with border ${this.data.currentBorderIndex}`);
       
     } catch (error) {
       this.stats.errors++;
@@ -336,10 +453,15 @@ async function main() {
   console.log('='.repeat(60));
   console.log(`🚀 ${BOT_NAME} - Telegram Userbot`);
   console.log('='.repeat(60));
-  console.log(`Version: 2.0.0`);
+  console.log(`Version: 2.2.0`);
   console.log(`Environment: Render Worker`);
   console.log(`AI Dependency: None (Rule-based)`);
   console.log(`Rate Limit: ${MAX_ACTIONS_PER_MINUTE}/minute`);
+  console.log(`Parse Mode: HTML Enabled ✅`);
+  console.log(`Group Replies: ${REPLY_IN_GROUPS ? 'ENABLED ✅' : 'DISABLED ❌'}`);
+  console.log(`Channel Replies: ${REPLY_IN_CHANNELS ? 'ENABLED ✅' : 'DISABLED ❌'}`);
+  console.log(`Ignore Bots: YES ✅`);
+  console.log(`Borders: ${USE_BORDERS ? 'ENABLED ✅' : 'DISABLED ❌'}`);
   console.log('='.repeat(60));
   
   // Initialize Telegram Client
@@ -370,7 +492,7 @@ async function main() {
     console.log(`✅ Username: @${me.username || 'N/A'}`);
     console.log(`✅ User ID: ${me.id}`);
     
-    // Setup event handler
+    // Setup event handler for all incoming messages
     client.addEventHandler(async (event) => {
       await messageHandler.handleNewMessage(event);
     }, new NewMessage({ incoming: true }));
@@ -385,6 +507,10 @@ async function main() {
       console.log(`   Uptime: ${hours}h ${minutes}m`);
       console.log(`   Messages: ${messageHandler.stats.messagesReceived}`);
       console.log(`   Responses: ${messageHandler.stats.responsesSent}`);
+      console.log(`   - Private: ${messageHandler.stats.privateReplies}`);
+      console.log(`   - Groups: ${messageHandler.stats.groupReplies}`);
+      console.log(`   - Borders Used: ${messageHandler.stats.bordersUsed}`);
+      console.log(`   Current Border: #${dataManager.currentBorderIndex + 1}/${dataManager.borders.length}`);
       console.log(`   Rate Limit: ${rateLimiter.getRemainingActions()}/${MAX_ACTIONS_PER_MINUTE}`);
       console.log('─'.repeat(40));
     }, 300000); // Every 5 minutes
@@ -394,6 +520,10 @@ async function main() {
     console.log('='.repeat(60));
     console.log('\n📋 Features:');
     console.log(`   • Private message replies`);
+    console.log(`   • Group message replies ✅`);
+    console.log(`   • Bot messages ignored ✅`);
+    console.log(`   • Beautiful borders ✅`);
+    console.log(`   • HTML formatting support`);
     console.log(`   • Typing simulation`);
     console.log(`   • Random reactions`);
     console.log(`   • Rate limiting`);
