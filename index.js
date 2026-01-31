@@ -29,7 +29,7 @@ class PerfectBorderSystem {
     this.borders = [];
     this.dataPath = path.join(__dirname, 'data');
     this.maxBorderLength = 40;
-    this.minBorderLength = 20;
+    this.minBorderLength = 10;
   }
 
   async loadBorders() {
@@ -183,7 +183,7 @@ class SpamProtection {
     this.userMessageCounts = new Map();
     this.mutedUsers = new Map();
     this.messageTimestamps = new Map();
-    this.MAX_MESSAGES_PER_MINUTE = 7;
+    this.MAX_MESSAGES_PER_MINUTE = 60;
     this.MUTE_DURATION = 60000;
   }
 
