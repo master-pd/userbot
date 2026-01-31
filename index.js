@@ -1,7 +1,6 @@
 // ============================================
 // YOUR CRUSH Userbot - Main Application
-// Fully Offline, AI-Free, Rule-Based System
-// Optimized for Render Deployment
+// WITH PROPER BORDER FORMATTING
 // ============================================
 
 const { TelegramClient } = require('telegram');
@@ -13,7 +12,7 @@ const path = require('path');
 const http = require('http');
 
 // ============================================
-// CONFIGURATION FROM RENDER ENVIRONMENT VARIABLES
+// CONFIGURATION
 // ============================================
 const API_ID = parseInt(process.env.API_ID) || 0;
 const API_HASH = process.env.API_HASH || '';
@@ -33,54 +32,43 @@ const USE_BORDERS = process.env.USE_BORDERS === 'true' || true;
 // VALIDATION
 // ============================================
 if (!API_ID || !API_HASH || !SESSION_STRING) {
-  console.error('❌ FATAL: Missing required environment variables in Render!');
-  console.error('Please set in Render Dashboard:');
-  console.error('1. API_ID (from https://my.telegram.org)');
-  console.error('2. API_HASH (from https://my.telegram.org)');
-  console.error('3. SESSION_STRING (run: node session.js locally)');
-  console.error('\n💡 Run "npm run session" locally first to generate session string');
+  console.error('❌ FATAL: Missing required environment variables!');
   process.exit(1);
 }
 
 // ============================================
-// HTTP SERVER FOR RENDER HEALTH CHECKS
+// HTTP SERVER
 // ============================================
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({
     status: 'online',
     bot: BOT_NAME,
-    service: 'Telegram Userbot',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
+    uptime: process.uptime()
   }));
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🌐 HTTP server running on port ${PORT}`);
+  console.log(`✅ HTTP server running on port ${PORT}`);
 });
 
 // ============================================
-// DATA MANAGER CLASS (UPDATED WITH BORDERS)
+// DATA MANAGER CLASS - WITH ADVANCED BORDER SYSTEM
 // ============================================
 class DataManager {
   constructor() {
     this.replies = {};
     this.reactions = ['👍', '❤️', '🔥', '😂', '😮', '😢', '😡', '🎉', '🤔', '👏'];
-    this.voices = [];
-    this.videos = [];
     this.borders = [];
     this.currentBorderIndex = 0;
   }
 
   async loadAllData() {
     try {
-      // Create data directory if it doesn't exist
+      // Create data directory
       try {
         await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
-      } catch (e) {
-        // Directory exists
-      }
+      } catch (e) {}
 
       // Load reply patterns
       const replyPath = path.join(__dirname, 'data', 'reply.json');
@@ -89,23 +77,11 @@ class DataManager {
         this.replies = JSON.parse(replyData);
         console.log(`✅ Loaded ${Object.keys(this.replies).length} reply patterns`);
       } catch (e) {
-        console.log('❌ reply.json not found, creating default...');
+        console.log('📝 Creating default reply.json...');
         this.replies = this.getDefaultReplies();
         await fs.writeFile(replyPath, JSON.stringify(this.replies, null, 2));
       }
-      
-      // Load reactions
-      const reactionPath = path.join(__dirname, 'data', 'reaction.json');
-      try {
-        const reactionData = await fs.readFile(reactionPath, 'utf8');
-        const parsed = JSON.parse(reactionData);
-        if (parsed.reactions && Array.isArray(parsed.reactions)) {
-          this.reactions = parsed.reactions;
-        }
-      } catch (e) {
-        console.log('⚠️ reaction.json not found, using default reactions');
-      }
-      
+
       // Load borders
       const borderPath = path.join(__dirname, 'data', 'border.json');
       try {
@@ -114,44 +90,17 @@ class DataManager {
         if (parsed.borders && Array.isArray(parsed.borders)) {
           this.borders = parsed.borders;
           console.log(`✅ Loaded ${this.borders.length} borders`);
-        } else {
-          throw new Error('Invalid format');
         }
       } catch (e) {
-        console.log('⚠️ border.json not found, creating default...');
+        console.log('🎨 Creating default border.json...');
         this.borders = this.getDefaultBorders();
         await fs.writeFile(borderPath, JSON.stringify({ borders: this.borders }, null, 2));
       }
-      
-      // Load voices
-      const voicePath = path.join(__dirname, 'data', 'voice.json');
-      try {
-        const voiceData = await fs.readFile(voicePath, 'utf8');
-        const parsed = JSON.parse(voiceData);
-        if (parsed.voices && Array.isArray(parsed.voices)) {
-          this.voices = parsed.voices;
-        }
-      } catch (e) {
-        console.log('ℹ️ voice.json not found');
-      }
-      
-      // Load videos
-      const videoPath = path.join(__dirname, 'data', 'video.json');
-      try {
-        const videoData = await fs.readFile(videoPath, 'utf8');
-        const parsed = JSON.parse(videoData);
-        if (parsed.videos && Array.isArray(parsed.videos)) {
-          this.videos = parsed.videos;
-        }
-      } catch (e) {
-        console.log('ℹ️ video.json not found');
-      }
-      
+
     } catch (error) {
-      console.error('❌ Error loading data files:', error.message);
+      console.error('❌ Error loading data:', error.message);
       this.replies = this.getDefaultReplies();
       this.borders = this.getDefaultBorders();
-      console.log('⚠️ Using default data due to error');
     }
   }
 
@@ -162,22 +111,61 @@ class DataManager {
       "test": ["Test successful! ✅", "Working! 🚀", "All good! 👍"],
       "i love you": ["Love you too! ❤️", "Aww 😘", "You're sweet! 💕"],
       "how are you": ["I'm good! 😊", "All good! 😄", "Feeling great! 🌟"],
-      "бот": ["Bot here! 🤖", "Привет! 👋", "Да, я здесь! ✅"],
-      "ping": ["Pong! 🏓", "I'm alive! 💖", "Active! ✅"],
-      "бот проверка": ["Проверка пройдена! ✅", "Я здесь! 👍", "Работаю нормально! 🚀"]
+      "бот": ["Bot здесь! 🤖", "Привет! 👋", "Да, я здесь! ✅"],
+      "ping": ["Pong! 🏓", "Я жив! 💖", "Активен! ✅"]
     };
   }
 
   getDefaultBorders() {
     return [
-      "╔═╦╗\n║ ║║\n╠═╬╣\n║ ║║\n╚═╩╝",
-      "┌─┐\n│ │\n├─┤\n│ │\n└─┘",
-      "╭─╮\n│ │\n├─┤\n│ │\n╰─╯",
-      "▛▀▀▜\n▌ ▐\n▌ ▐\n▙▄▄▟",
-      "▗▄▄▖\n▐   ▌\n▐   ▌\n▝▀▀▘",
-      "✦────────✦\n│         │\n│         │\n│         │\n✦────────✦",
-      "•·.·´¯`·.·•\n   ✨  \n•·.·`¯´·.·•",
-      "༻✦༺  ༻✦༺\n   🎀  \n༻✦༺  ༻✦༺"
+      {
+        name: "Basic Box",
+        top: "╔══════════════╗",
+        middle: "║",
+        bottom: "╚══════════════╝",
+        left: "║ ",
+        right: " ║"
+      },
+      {
+        name: "Rounded Box",
+        top: "╭──────────────╮",
+        middle: "│",
+        bottom: "╰──────────────╯",
+        left: "│ ",
+        right: " │"
+      },
+      {
+        name: "Double Line Box",
+        top: "╔══════════════╗",
+        middle: "║",
+        bottom: "╚══════════════╝",
+        left: "║ ",
+        right: " ║"
+      },
+      {
+        name: "Thick Border",
+        top: "▛▀▀▀▀▀▀▀▀▀▀▀▀▀▜",
+        middle: "▌",
+        bottom: "▙▄▄▄▄▄▄▄▄▄▄▄▄▄▟",
+        left: "▌ ",
+        right: " ▐"
+      },
+      {
+        name: "Star Border",
+        top: "✦──────────────✦",
+        middle: "│",
+        bottom: "✦──────────────✦",
+        left: "│ ",
+        right: " │"
+      },
+      {
+        name: "Fancy Border",
+        top: "•·.·´¯`·.·•·.·´¯`·.·•",
+        middle: " ",
+        bottom: "•·.·`¯´·.·•·.·`¯´·.·•",
+        left: "   ",
+        right: "   "
+      }
     ];
   }
 
@@ -187,13 +175,13 @@ class DataManager {
     const msg = message.toLowerCase().trim();
     if (msg.length === 0) return null;
     
-    // 1. Exact match
+    // Exact match
     if (this.replies[msg]) {
       const replies = this.replies[msg];
       return replies[Math.floor(Math.random() * replies.length)];
     }
     
-    // 2. Word-by-word match
+    // Word match
     const words = msg.split(/\s+/);
     for (const word of words) {
       if (word.length > 2 && this.replies[word]) {
@@ -202,12 +190,10 @@ class DataManager {
       }
     }
     
-    // 3. No match found
     return null;
   }
 
   getRandomReaction() {
-    if (this.reactions.length === 0) return '👍';
     return this.reactions[Math.floor(Math.random() * this.reactions.length)];
   }
 
@@ -221,6 +207,7 @@ class DataManager {
     return border;
   }
 
+  // FIXED: Proper border formatting
   formatWithBorder(text) {
     if (!USE_BORDERS || this.borders.length === 0) {
       return text;
@@ -228,7 +215,62 @@ class DataManager {
     
     const border = this.getNextBorder();
     const lines = text.split('\n');
-    return `${border}\n${lines.map(line => `   ${line}`).join('\n')}\n${border}`;
+    
+    // Find maximum line length
+    let maxLength = 0;
+    lines.forEach(line => {
+      // Approximate length (emoji counts as 2 chars)
+      const length = line.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '  ').length;
+      if (length > maxLength) maxLength = length;
+    });
+    
+    // Ensure minimum width
+    maxLength = Math.max(maxLength, 10);
+    
+    // Create top border
+    let result = this.createHorizontalBorder(border.top, maxLength) + '\n';
+    
+    // Add content lines
+    lines.forEach(line => {
+      const padding = maxLength - line.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '  ').length;
+      const leftPadding = Math.floor(padding / 2);
+      const rightPadding = padding - leftPadding;
+      
+      result += border.left + 
+                ' '.repeat(leftPadding) + 
+                line + 
+                ' '.repeat(rightPadding) + 
+                border.right + '\n';
+    });
+    
+    // Create bottom border
+    result += this.createHorizontalBorder(border.bottom, maxLength);
+    
+    return result;
+  }
+
+  createHorizontalBorder(borderPattern, length) {
+    // Simple border patterns
+    if (borderPattern.includes('═') && borderPattern.includes('╔')) {
+      return '╔' + '═'.repeat(length + 2) + '╗';
+    } else if (borderPattern.includes('─') && borderPattern.includes('╭')) {
+      return '╭' + '─'.repeat(length + 2) + '╮';
+    } else if (borderPattern.includes('━') && borderPattern.includes('┏')) {
+      return '┏' + '━'.repeat(length + 2) + '┓';
+    } else if (borderPattern.includes('▀') && borderPattern.includes('▛')) {
+      return '▛' + '▀'.repeat(length + 2) + '▜';
+    } else if (borderPattern.includes('─') && borderPattern.includes('✦')) {
+      return '✦' + '─'.repeat(length + 2) + '✦';
+    } else {
+      // For fancy borders, center them
+      const borderLength = borderPattern.length;
+      if (borderLength > length + 4) {
+        return borderPattern;
+      } else {
+        const repeatCount = Math.floor((length + 4) / borderLength) + 1;
+        return borderPattern.repeat(repeatCount).substring(0, length + 4);
+      }
+    }
   }
 }
 
@@ -258,11 +300,10 @@ class TypingSystem {
         action: { _: 'sendMessageTypingAction' }
       });
       
-      const duration = this.getRandomDelay();
-      await new Promise(resolve => setTimeout(resolve, duration));
+      await new Promise(resolve => setTimeout(resolve, this.getRandomDelay()));
       
     } catch (error) {
-      // Silent fail
+      // Ignore
     } finally {
       this.isTyping = false;
     }
@@ -281,13 +322,10 @@ class RateLimiter {
 
   canPerformAction() {
     const now = Date.now();
-    
-    // Clean old timestamps
     this.actionTimestamps = this.actionTimestamps.filter(
       timestamp => now - timestamp < this.windowMs
     );
     
-    // Check limit
     if (this.actionTimestamps.length < this.maxPerMinute) {
       this.actionTimestamps.push(now);
       return true;
@@ -295,18 +333,10 @@ class RateLimiter {
     
     return false;
   }
-
-  getRemainingActions() {
-    const now = Date.now();
-    this.actionTimestamps = this.actionTimestamps.filter(
-      timestamp => now - timestamp < this.windowMs
-    );
-    return this.maxPerMinute - this.actionTimestamps.length;
-  }
 }
 
 // ============================================
-// MESSAGE HANDLER CLASS - FIXED VERSION
+// MESSAGE HANDLER CLASS
 // ============================================
 class MessageHandler {
   constructor(client, dataManager, typingSystem, rateLimiter) {
@@ -319,30 +349,23 @@ class MessageHandler {
     this.stats = {
       messagesReceived: 0,
       responsesSent: 0,
-      errors: 0,
-      groupReplies: 0,
-      privateReplies: 0,
-      bordersUsed: 0
+      errors: 0
     };
   }
 
   async shouldProcessMessage(message) {
-    // Check if valid message
     if (!message || !message.message || message.message.trim() === '') {
       return false;
     }
     
-    // Skip own messages
     if (message.out) {
       return false;
     }
     
-    // Check rate limit
     if (!this.rateLimiter.canPerformAction()) {
       return false;
     }
     
-    // Check cooldown
     const now = Date.now();
     if (now - this.lastActionTime < this.cooldownPeriod) {
       return false;
@@ -365,19 +388,15 @@ class MessageHandler {
         return;
       }
       
-      // Typing simulation
+      // Typing
       if (!message.isGroup && !message.isChannel) {
         await this.typing.simulateTyping(message.chatId);
       }
       
-      // Apply border
-      let formattedReply = replyText;
-      if (USE_BORDERS) {
-        formattedReply = this.data.formatWithBorder(replyText);
-        this.stats.bordersUsed++;
-      }
+      // Format with border
+      const formattedReply = this.data.formatWithBorder(replyText);
       
-      // Send reply - FIXED: Using correct API method
+      // Send reply
       await this.client.sendMessage(message.chatId, {
         message: formattedReply,
         parseMode: 'html'
@@ -386,19 +405,10 @@ class MessageHandler {
       this.lastActionTime = Date.now();
       this.stats.responsesSent++;
       
-      // Update stats
-      if (message.isGroup) {
-        this.stats.groupReplies++;
-      } else if (!message.isChannel) {
-        this.stats.privateReplies++;
-      }
-      
-      // Log
-      const chatType = message.isGroup ? 'GROUP' : (message.isChannel ? 'CHANNEL' : 'PRIVATE');
-      console.log(`💌 [${chatType}] Replied to ${message.chatId}`);
+      console.log(`✅ Replied to ${message.chatId}: "${replyText.substring(0, 30)}..."`);
       
       // Random reaction
-      if (Math.random() < 0.25 && this.rateLimiter.canPerformAction() && !message.isGroup && !message.isChannel) {
+      if (Math.random() < 0.25 && !message.isGroup && !message.isChannel) {
         try {
           const reaction = this.data.getRandomReaction();
           await this.client.invoke(new Api.messages.SendReaction({
@@ -421,20 +431,14 @@ class MessageHandler {
 }
 
 // ============================================
-// MAIN APPLICATION - FIXED
+// MAIN APPLICATION
 // ============================================
 async function main() {
   console.log('='.repeat(60));
   console.log(`🚀 ${BOT_NAME} - Telegram Userbot`);
   console.log('='.repeat(60));
-  console.log(`Version: 2.2.0`);
-  console.log(`Environment: Render Worker`);
-  console.log(`AI Dependency: None (Rule-based)`);
-  console.log(`Rate Limit: ${MAX_ACTIONS_PER_MINUTE}/minute`);
-  console.log(`Parse Mode: HTML Enabled ✅`);
-  console.log(`Group Replies: ${REPLY_IN_GROUPS ? 'ENABLED ✅' : 'DISABLED ❌'}`);
-  console.log(`Ignore Bots: YES ✅`);
-  console.log(`Borders: ${USE_BORDERS ? 'ENABLED ✅' : 'DISABLED ❌'}`);
+  console.log(`Version: 3.0.0`);
+  console.log(`Smart Borders: ENABLED ✅`);
   console.log('='.repeat(60));
   
   // Initialize Telegram Client
@@ -442,8 +446,7 @@ async function main() {
   const client = new TelegramClient(stringSession, API_ID, API_HASH, {
     connectionRetries: 5,
     useWSS: true,
-    autoReconnect: true,
-    requestRetries: 3
+    autoReconnect: true
   });
   
   // Initialize systems
@@ -458,76 +461,50 @@ async function main() {
     // Connect to Telegram
     console.log('🔗 Connecting to Telegram...');
     await client.connect();
-    console.log('✅ Connected to Telegram');
+    console.log('✅ Connected!');
     
     // Get user info
     const me = await client.getMe();
-    console.log(`✅ Logged in as: ${me.firstName || ''}${me.lastName ? ' ' + me.lastName : ''}`);
-    console.log(`✅ Username: @${me.username || 'N/A'}`);
-    console.log(`✅ User ID: ${me.id}`);
+    console.log(`👤 User: ${me.firstName || ''}${me.lastName ? ' ' + me.lastName : ''}`);
+    console.log(`📱 Username: @${me.username || 'N/A'}`);
+    console.log(`🆔 ID: ${me.id}`);
     
-    // Setup event handler - FIXED PARAMETERS
+    // Setup event handler
     client.addEventHandler(async (event) => {
       await messageHandler.handleNewMessage(event);
     }, new NewMessage({}));
     
-    console.log('✅ Event handler setup complete');
+    console.log('✅ Event handler ready');
+    console.log('👂 Listening for messages...');
     
-    // Status monitoring
+    // Status monitor
     setInterval(() => {
-      const uptime = process.uptime();
+      const uptime = Math.floor(process.uptime());
       const hours = Math.floor(uptime / 3600);
       const minutes = Math.floor((uptime % 3600) / 60);
       
-      console.log('\n📊 System Status:');
+      console.log('\n📊 STATUS:');
       console.log(`   Uptime: ${hours}h ${minutes}m`);
       console.log(`   Messages: ${messageHandler.stats.messagesReceived}`);
-      console.log(`   Responses: ${messageHandler.stats.responsesSent}`);
-      console.log(`   - Private: ${messageHandler.stats.privateReplies}`);
-      console.log(`   - Groups: ${messageHandler.stats.groupReplies}`);
-      console.log(`   - Borders: ${messageHandler.stats.bordersUsed}`);
-      console.log(`   Rate Limit: ${rateLimiter.getRemainingActions()}/${MAX_ACTIONS_PER_MINUTE}`);
+      console.log(`   Replies: ${messageHandler.stats.responsesSent}`);
+      console.log(`   Current Border: ${dataManager.borders[dataManager.currentBorderIndex]?.name || 'N/A'}`);
       console.log('─'.repeat(40));
     }, 300000);
     
     console.log('\n' + '='.repeat(60));
-    console.log(`✅ ${BOT_NAME} is now ONLINE and ready!`);
+    console.log(`✅ ${BOT_NAME} is ONLINE!`);
     console.log('='.repeat(60));
-    console.log('\n📋 Features:');
-    console.log(`   • Private message replies`);
-    console.log(`   • Group message replies ✅`);
-    console.log(`   • Bot messages ignored ✅`);
-    console.log(`   • Beautiful borders ✅`);
-    console.log(`   • HTML formatting support`);
-    console.log(`   • Typing simulation`);
-    console.log(`   • Random reactions`);
-    console.log(`   • Rate limiting`);
-    console.log(`   • HTTP health endpoint`);
+    console.log('\n📌 Border Format:');
+    console.log('   Single box with centered text');
+    console.log('   Auto-resizing based on content');
+    console.log('   No broken borders');
     console.log('='.repeat(60));
     
-    // Graceful shutdown
-    process.on('SIGTERM', async () => {
-      console.log('\n🛑 Received SIGTERM - Shutting down...');
-      await client.disconnect();
-      console.log('✅ Disconnected from Telegram');
-      process.exit(0);
-    });
-    
-    process.on('SIGINT', async () => {
-      console.log('\n🛑 Received SIGINT - Shutting down...');
-      await client.disconnect();
-      console.log('✅ Disconnected from Telegram');
-      process.exit(0);
-    });
-    
-    // Keep process alive
+    // Keep alive
     setInterval(() => {}, 1000);
     
   } catch (error) {
     console.error('❌ Startup failed:', error.message);
-    if (error.message.includes('AUTH_KEY')) {
-      console.error('⚠️ Invalid session string! Generate new one.');
-    }
     process.exit(1);
   }
 }
