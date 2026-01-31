@@ -75,11 +75,24 @@ class DataManager {
 
   async loadAllData() {
     try {
+      // Create data directory if it doesn't exist
+      try {
+        await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
+      } catch (e) {
+        // Directory exists
+      }
+
       // Load reply patterns
       const replyPath = path.join(__dirname, 'data', 'reply.json');
-      const replyData = await fs.readFile(replyPath, 'utf8');
-      this.replies = JSON.parse(replyData);
-      console.log(`✅ Loaded ${Object.keys(this.replies).length} reply patterns`);
+      try {
+        const replyData = await fs.readFile(replyPath, 'utf8');
+        this.replies = JSON.parse(replyData);
+        console.log(`✅ Loaded ${Object.keys(this.replies).length} reply patterns`);
+      } catch (e) {
+        console.log('❌ reply.json not found, creating default...');
+        this.replies = this.getDefaultReplies();
+        await fs.writeFile(replyPath, JSON.stringify(this.replies, null, 2));
+      }
       
       // Load reactions
       const reactionPath = path.join(__dirname, 'data', 'reaction.json');
@@ -90,7 +103,7 @@ class DataManager {
           this.reactions = parsed.reactions;
         }
       } catch (e) {
-        console.log('⚠️ Using default reactions');
+        console.log('⚠️ reaction.json not found, using default reactions');
       }
       
       // Load borders
@@ -102,11 +115,12 @@ class DataManager {
           this.borders = parsed.borders;
           console.log(`✅ Loaded ${this.borders.length} borders`);
         } else {
-          throw new Error('Invalid border.json format');
+          throw new Error('Invalid format');
         }
       } catch (e) {
-        console.log('⚠️ Using default borders');
+        console.log('⚠️ border.json not found, creating default...');
         this.borders = this.getDefaultBorders();
+        await fs.writeFile(borderPath, JSON.stringify({ borders: this.borders }, null, 2));
       }
       
       // Load voices
@@ -118,7 +132,7 @@ class DataManager {
           this.voices = parsed.voices;
         }
       } catch (e) {
-        console.log('ℹ️ No voice files configured');
+        console.log('ℹ️ voice.json not found');
       }
       
       // Load videos
@@ -130,22 +144,28 @@ class DataManager {
           this.videos = parsed.videos;
         }
       } catch (e) {
-        console.log('ℹ️ No video files configured');
+        console.log('ℹ️ video.json not found');
       }
       
     } catch (error) {
       console.error('❌ Error loading data files:', error.message);
-      // Initialize with default data
-      this.replies = {
-        "hi": ["Hello! 👋", "Hi there! 😊", "Hey! ❤️"],
-        "hello": ["Hi! 😄", "Hello! 💖", "Hey there! 🌸"],
-        "test": ["Test successful! ✅", "Working! 🚀", "All good! 👍"],
-        "i love you": ["Love you too! ❤️", "Aww 😘", "You're sweet! 💕"],
-        "how are you": ["I'm good! 😊", "All good! 😄", "Feeling great! 🌟"]
-      };
+      this.replies = this.getDefaultReplies();
       this.borders = this.getDefaultBorders();
       console.log('⚠️ Using default data due to error');
     }
+  }
+
+  getDefaultReplies() {
+    return {
+      "hi": ["Hello! 👋", "Hi there! 😊", "Hey! ❤️"],
+      "hello": ["Hi! 😄", "Hello! 💖", "Hey there! 🌸"],
+      "test": ["Test successful! ✅", "Working! 🚀", "All good! 👍"],
+      "i love you": ["Love you too! ❤️", "Aww 😘", "You're sweet! 💕"],
+      "how are you": ["I'm good! 😊", "All good! 😄", "Feeling great! 🌟"],
+      "бот": ["Bot here! 🤖", "Привет! 👋", "Да, я здесь! ✅"],
+      "ping": ["Pong! 🏓", "I'm alive! 💖", "Active! ✅"],
+      "бот проверка": ["Проверка пройдена! ✅", "Я здесь! 👍", "Работаю нормально! 🚀"]
+    };
   }
 
   getDefaultBorders() {
@@ -157,11 +177,7 @@ class DataManager {
       "▗▄▄▖\n▐   ▌\n▐   ▌\n▝▀▀▘",
       "✦────────✦\n│         │\n│         │\n│         │\n✦────────✦",
       "•·.·´¯`·.·•\n   ✨  \n•·.·`¯´·.·•",
-      "༻✦༺  ༻✦༺\n   🎀  \n༻✦༺  ༻✦༺",
-      "┏━━━┓\n┃   ┃\n┗━━━┛",
-      "【｡‿｡】\n   💖  \n【｡‿｡】",
-      "░░░░░░░\n▓▓▓▓▓▓▓\n░░░░░░░",
-      "◤━━━━━◥\n┊       ┊\n◣━━━━━◢"
+      "༻✦༺  ༻✦༺\n   🎀  \n༻✦༺  ༻✦༺"
     ];
   }
 
@@ -201,19 +217,8 @@ class DataManager {
     }
     
     const border = this.borders[this.currentBorderIndex];
-    
-    // Move to next border (circular)
     this.currentBorderIndex = (this.currentBorderIndex + 1) % this.borders.length;
-    
     return border;
-  }
-
-  getRandomBorder() {
-    if (this.borders.length === 0) {
-      this.borders = this.getDefaultBorders();
-    }
-    
-    return this.borders[Math.floor(Math.random() * this.borders.length)];
   }
 
   formatWithBorder(text) {
@@ -223,8 +228,6 @@ class DataManager {
     
     const border = this.getNextBorder();
     const lines = text.split('\n');
-    
-    // Simple border wrapping
     return `${border}\n${lines.map(line => `   ${line}`).join('\n')}\n${border}`;
   }
 }
@@ -303,7 +306,7 @@ class RateLimiter {
 }
 
 // ============================================
-// MESSAGE HANDLER CLASS (UPDATED WITH BORDERS)
+// MESSAGE HANDLER CLASS - FIXED VERSION
 // ============================================
 class MessageHandler {
   constructor(client, dataManager, typingSystem, rateLimiter) {
@@ -326,11 +329,6 @@ class MessageHandler {
   async shouldProcessMessage(message) {
     // Check if valid message
     if (!message || !message.message || message.message.trim() === '') {
-      return false;
-    }
-    
-    // Skip if from bot
-    if (message.sender && message.sender.bot) {
       return false;
     }
     
@@ -364,90 +362,66 @@ class MessageHandler {
       
       const replyText = this.data.findReply(message.message);
       if (!replyText) {
-        return; // No matching reply - stay silent
+        return;
       }
       
-      // Typing simulation only in private chats
+      // Typing simulation
       if (!message.isGroup && !message.isChannel) {
         await this.typing.simulateTyping(message.chatId);
       }
       
-      // Apply border to reply text
+      // Apply border
       let formattedReply = replyText;
       if (USE_BORDERS) {
         formattedReply = this.data.formatWithBorder(replyText);
         this.stats.bordersUsed++;
       }
       
-      // Check if it's a group message and needs mention
-      let replyMessage = formattedReply;
-      let sendOptions = {
-        message: replyMessage,
-        parseMode: new Api.TextParseModeHTML()
-      };
-      
-      // If it's a group/channel and message has a sender, mention the user
-      if ((message.isGroup || message.isChannel) && message.senderId) {
-        try {
-          const sender = await this.client.getEntity(message.senderId);
-          if (sender) {
-            const mention = `<a href="tg://user?id=${sender.id}">${sender.firstName || ''}</a>`;
-            replyMessage = `${mention}\n\n${formattedReply}`;
-            sendOptions.message = replyMessage;
-          }
-        } catch (error) {
-          // Continue without mention if can't get user
-        }
-      }
-      
-      // Send reply
-      await this.client.invoke(
-        new Api.messages.SendMessage({
-          peer: message.chatId,
-          ...sendOptions
-        })
-      );
+      // Send reply - FIXED: Using correct API method
+      await this.client.sendMessage(message.chatId, {
+        message: formattedReply,
+        parseMode: 'html'
+      });
       
       this.lastActionTime = Date.now();
       this.stats.responsesSent++;
       
-      // Update stats based on chat type
+      // Update stats
       if (message.isGroup) {
         this.stats.groupReplies++;
       } else if (!message.isChannel) {
         this.stats.privateReplies++;
       }
       
-      // Random reaction (25% chance) - only in private chats
+      // Log
+      const chatType = message.isGroup ? 'GROUP' : (message.isChannel ? 'CHANNEL' : 'PRIVATE');
+      console.log(`💌 [${chatType}] Replied to ${message.chatId}`);
+      
+      // Random reaction
       if (Math.random() < 0.25 && this.rateLimiter.canPerformAction() && !message.isGroup && !message.isChannel) {
-        const reaction = this.data.getRandomReaction();
         try {
-          await this.client.invoke({
-            _: 'messages.sendReaction',
-            peer: await this.client.getInputEntity(message.chatId),
+          const reaction = this.data.getRandomReaction();
+          await this.client.invoke(new Api.messages.SendReaction({
+            peer: message.chatId,
             msgId: message.id,
-            reaction: [{ _: 'reactionEmoji', emoticon: reaction }]
-          });
+            reaction: [new Api.ReactionEmoji({ emoticon: reaction })]
+          }));
         } catch (error) {
-          // Silent fail
+          // Ignore
         }
       }
-      
-      // Log message
-      const chatType = message.isGroup ? 'GROUP' : (message.isChannel ? 'CHANNEL' : 'PRIVATE');
-      console.log(`💌 [${chatType}] Replied to ${message.chatId} with border ${this.data.currentBorderIndex}`);
       
     } catch (error) {
       this.stats.errors++;
       if (LOG_LEVEL === 'debug') {
-        console.error('Message handler error:', error.message);
+        console.error('Error:', error.message);
       }
     }
   }
 }
 
 // ============================================
-// MAIN APPLICATION
+// MAIN APPLICATION - FIXED
 // ============================================
 async function main() {
   console.log('='.repeat(60));
@@ -459,7 +433,6 @@ async function main() {
   console.log(`Rate Limit: ${MAX_ACTIONS_PER_MINUTE}/minute`);
   console.log(`Parse Mode: HTML Enabled ✅`);
   console.log(`Group Replies: ${REPLY_IN_GROUPS ? 'ENABLED ✅' : 'DISABLED ❌'}`);
-  console.log(`Channel Replies: ${REPLY_IN_CHANNELS ? 'ENABLED ✅' : 'DISABLED ❌'}`);
   console.log(`Ignore Bots: YES ✅`);
   console.log(`Borders: ${USE_BORDERS ? 'ENABLED ✅' : 'DISABLED ❌'}`);
   console.log('='.repeat(60));
@@ -469,7 +442,8 @@ async function main() {
   const client = new TelegramClient(stringSession, API_ID, API_HASH, {
     connectionRetries: 5,
     useWSS: true,
-    autoReconnect: true
+    autoReconnect: true,
+    requestRetries: 3
   });
   
   // Initialize systems
@@ -492,10 +466,12 @@ async function main() {
     console.log(`✅ Username: @${me.username || 'N/A'}`);
     console.log(`✅ User ID: ${me.id}`);
     
-    // Setup event handler for all incoming messages
+    // Setup event handler - FIXED PARAMETERS
     client.addEventHandler(async (event) => {
       await messageHandler.handleNewMessage(event);
-    }, new NewMessage({ incoming: true }));
+    }, new NewMessage({}));
+    
+    console.log('✅ Event handler setup complete');
     
     // Status monitoring
     setInterval(() => {
@@ -509,11 +485,10 @@ async function main() {
       console.log(`   Responses: ${messageHandler.stats.responsesSent}`);
       console.log(`   - Private: ${messageHandler.stats.privateReplies}`);
       console.log(`   - Groups: ${messageHandler.stats.groupReplies}`);
-      console.log(`   - Borders Used: ${messageHandler.stats.bordersUsed}`);
-      console.log(`   Current Border: #${dataManager.currentBorderIndex + 1}/${dataManager.borders.length}`);
+      console.log(`   - Borders: ${messageHandler.stats.bordersUsed}`);
       console.log(`   Rate Limit: ${rateLimiter.getRemainingActions()}/${MAX_ACTIONS_PER_MINUTE}`);
       console.log('─'.repeat(40));
-    }, 300000); // Every 5 minutes
+    }, 300000);
     
     console.log('\n' + '='.repeat(60));
     console.log(`✅ ${BOT_NAME} is now ONLINE and ready!`);
@@ -545,11 +520,17 @@ async function main() {
       process.exit(0);
     });
     
+    // Keep process alive
+    setInterval(() => {}, 1000);
+    
   } catch (error) {
     console.error('❌ Startup failed:', error.message);
+    if (error.message.includes('AUTH_KEY')) {
+      console.error('⚠️ Invalid session string! Generate new one.');
+    }
     process.exit(1);
   }
 }
 
 // Start the application
-main();
+main().catch(console.error);
