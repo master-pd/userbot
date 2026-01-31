@@ -1,0 +1,10 @@
+{
+  "videos": [
+    {
+      "id": "video_1",
+      "title": "Chill Music",
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "duration": "3:45"
+    }
+  ]
+}
