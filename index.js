@@ -1,6 +1,6 @@
 // ============================================
 // YOUR CRUSH Userbot - Main Application
-// COMPLETE FINAL CODE WITH ALL FEATURES
+// COMPLETE PROFESSIONAL CODE WITH ALL FEATURES
 // ============================================
 
 const { TelegramClient } = require('telegram');
@@ -22,6 +22,317 @@ const OWNER_ID = parseInt(process.env.OWNER_ID) || 0;
 const PORT = process.env.PORT || 3000;
 
 // ============================================
+// PERFECT BORDER SYSTEM - শুধু উপরে-নিচে বর্ডার
+// ============================================
+class PerfectBorderSystem {
+  constructor() {
+    this.borders = [];
+    this.dataPath = path.join(__dirname, 'data');
+    this.maxBorderLength = 60; // Maximum border length
+    this.minBorderLength = 30; // Minimum border length
+  }
+
+  async loadBorders() {
+    try {
+      const borderPath = path.join(this.dataPath, 'border.json');
+      const borderData = await fs.readFile(borderPath, 'utf8');
+      this.borders = JSON.parse(borderData);
+      
+      console.log(`✅ Loaded ${this.borders.length} border styles from JSON`);
+      
+      if (this.borders.length === 0) {
+        this.borders = this.getDefaultBorders();
+        console.log('⚠️ Using default borders');
+      }
+      
+    } catch (error) {
+      console.log('📝 Creating default border.json...');
+      this.borders = this.getDefaultBorders();
+      await this.createDefaultBorderFile();
+    }
+  }
+
+  getDefaultBorders() {
+    return [
+      {
+        "name": "Double Line",
+        "top": "══════════════",
+        "bottom": "══════════════"
+      },
+      {
+        "name": "Single Line",
+        "top": "──────────────",
+        "bottom": "──────────────"
+      },
+      {
+        "name": "Star Style",
+        "top": "✦────────────✦",
+        "bottom": "✦────────────✦"
+      },
+      {
+        "name": "Heart Style",
+        "top": "❤️──────────❤️",
+        "bottom": "❤️──────────❤️"
+      },
+      {
+        "name": "Arrow Style",
+        "top": "»»──────────««",
+        "bottom": "»»──────────««"
+      },
+      {
+        "name": "Dotted Line",
+        "top": "••••••••••••••",
+        "bottom": "••••••••••••••"
+      },
+      {
+        "name": "Wave Style",
+        "top": "〜〜〜〜〜〜〜〜〜〜",
+        "bottom": "〜〜〜〜〜〜〜〜〜〜"
+      },
+      {
+        "name": "Fire Style",
+        "top": "🔥──────────🔥",
+        "bottom": "🔥──────────🔥"
+      },
+      {
+        "name": "Music Style",
+        "top": "♫──────────♫",
+        "bottom": "♫──────────♫"
+      },
+      {
+        "name": "Thick Line",
+        "top": "━━━━━━━━━━━━",
+        "bottom": "━━━━━━━━━━━━"
+      }
+    ];
+  }
+
+  async createDefaultBorderFile() {
+    const defaultBorders = this.getDefaultBorders();
+    await fs.writeFile(
+      path.join(this.dataPath, 'border.json'),
+      JSON.stringify(defaultBorders, null, 2)
+    );
+  }
+
+  calculateOptimalBorderLength(text) {
+    if (!text) return this.minBorderLength;
+    
+    // Split text into lines
+    const lines = text.split('\n');
+    let maxLineLength = 0;
+    
+    // Calculate maximum line length
+    for (const line of lines) {
+      // Remove HTML tags for length calculation
+      const cleanLine = line.replace(/<[^>]*>/g, '').trim();
+      if (cleanLine.length > maxLineLength) {
+        maxLineLength = cleanLine.length;
+      }
+    }
+    
+    // Calculate optimal border length
+    let optimalLength = Math.max(
+      this.minBorderLength,
+      Math.min(maxLineLength + 4, this.maxBorderLength) // Add padding
+    );
+    
+    // Ensure border length is not too small for short texts
+    if (maxLineLength < 10) {
+      optimalLength = Math.max(this.minBorderLength, 20);
+    }
+    
+    return optimalLength;
+  }
+
+  createPerfectBorder(text) {
+    if (!text || text.trim() === '') {
+      return text;
+    }
+
+    // Select random border from JSON
+    if (this.borders.length === 0) {
+      return text;
+    }
+    
+    const border = this.borders[Math.floor(Math.random() * this.borders.length)];
+    
+    // Calculate optimal border length based on text
+    const optimalLength = this.calculateOptimalBorderLength(text);
+    
+    // Create border lines with optimal length
+    let topBorder = this.createBorderLine(border.top, optimalLength);
+    let bottomBorder = this.createBorderLine(border.bottom, optimalLength);
+    
+    // Create centered text lines
+    const centeredLines = this.createCenteredLines(text, optimalLength);
+    
+    // Assemble complete border (শুধু উপরে এবং নিচে)
+    const result = [];
+    result.push(topBorder);
+    result.push(''); // Empty line before text
+    
+    // Add all text lines
+    centeredLines.forEach(line => {
+      result.push(line);
+    });
+    
+    result.push(''); // Empty line after text
+    result.push(bottomBorder);
+    
+    return result.join('\n');
+  }
+
+  createBorderLine(borderPattern, targetLength) {
+    if (borderPattern.length >= targetLength) {
+      return borderPattern.substring(0, targetLength);
+    }
+    
+    // Extend border pattern to reach target length
+    let result = borderPattern;
+    const patternLength = borderPattern.length;
+    let patternIndex = 0;
+    
+    while (result.length < targetLength) {
+      result += borderPattern[patternIndex % patternLength];
+      patternIndex++;
+    }
+    
+    return result.substring(0, targetLength);
+  }
+
+  createCenteredLines(text, borderLength) {
+    const lines = text.split('\n');
+    const centeredLines = [];
+    
+    for (const line of lines) {
+      if (line.trim() === '') {
+        centeredLines.push('');
+        continue;
+      }
+      
+      // Calculate actual text length (without HTML tags)
+      const cleanText = line.replace(/<[^>]*>/g, '');
+      const textLength = cleanText.length;
+      
+      if (textLength >= borderLength - 4) {
+        // If text is too long, keep it as is (no centering)
+        centeredLines.push(line);
+      } else {
+        // Calculate padding for centering
+        const totalPadding = borderLength - textLength;
+        const leftPadding = Math.floor(totalPadding / 2);
+        const rightPadding = totalPadding - leftPadding;
+        
+        // Create centered line with HTML tags preserved
+        const leftSpaces = ' '.repeat(Math.max(0, leftPadding - 2));
+        const rightSpaces = ' '.repeat(Math.max(0, rightPadding - 2));
+        
+        centeredLines.push(leftSpaces + line + rightSpaces);
+      }
+    }
+    
+    return centeredLines;
+  }
+
+  getRandomBorder() {
+    if (this.borders.length === 0) {
+      return this.getDefaultBorders()[0];
+    }
+    return this.borders[Math.floor(Math.random() * this.borders.length)];
+  }
+}
+
+// ============================================
+// SPAM PROTECTION SYSTEM
+// ============================================
+class SpamProtection {
+  constructor() {
+    this.userMessageCounts = new Map();
+    this.mutedUsers = new Map();
+    this.messageTimestamps = new Map();
+    this.MAX_MESSAGES_PER_MINUTE = 7; // 7 messages per minute maximum
+    this.MUTE_DURATION = 60000; // 1 minute mute
+    this.CLEANUP_INTERVAL = 300000; // Clean every 5 minutes
+  }
+
+  canUserSend(userId) {
+    const now = Date.now();
+    
+    // Check if user is muted
+    const muteEnd = this.mutedUsers.get(userId);
+    if (muteEnd && now < muteEnd) {
+      return false;
+    }
+    
+    // Clean old messages for this user
+    const userTimestamps = this.messageTimestamps.get(userId) || [];
+    const validTimestamps = userTimestamps.filter(ts => now - ts < 60000);
+    
+    // Update counts
+    this.messageTimestamps.set(userId, validTimestamps);
+    
+    // Check if user exceeded limit
+    if (validTimestamps.length >= this.MAX_MESSAGES_PER_MINUTE) {
+      // Mute the user for 1 minute
+      this.mutedUsers.set(userId, now + this.MUTE_DURATION);
+      console.log(`🔇 User ${userId} muted for 1 minute (spam detected)`);
+      return false;
+    }
+    
+    // Add current timestamp
+    validTimestamps.push(now);
+    this.messageTimestamps.set(userId, validTimestamps);
+    
+    return true;
+  }
+
+  cleanup() {
+    const now = Date.now();
+    
+    // Remove old muted users
+    for (const [userId, muteEnd] of this.mutedUsers.entries()) {
+      if (now >= muteEnd) {
+        this.mutedUsers.delete(userId);
+        console.log(`🔊 User ${userId} unmuted`);
+      }
+    }
+    
+    // Remove old message timestamps
+    for (const [userId, timestamps] of this.messageTimestamps.entries()) {
+      const validTimestamps = timestamps.filter(ts => now - ts < 120000); // Keep 2 minutes
+      if (validTimestamps.length === 0) {
+        this.messageTimestamps.delete(userId);
+      } else {
+        this.messageTimestamps.set(userId, validTimestamps);
+      }
+    }
+  }
+
+  startCleanupTimer() {
+    setInterval(() => {
+      this.cleanup();
+    }, this.CLEANUP_INTERVAL);
+  }
+
+  getUserStats(userId) {
+    const timestamps = this.messageTimestamps.get(userId) || [];
+    const now = Date.now();
+    const recentMessages = timestamps.filter(ts => now - ts < 60000).length;
+    const isMuted = this.mutedUsers.has(userId);
+    const muteEnd = this.mutedUsers.get(userId);
+    const timeLeft = muteEnd ? Math.max(0, muteEnd - now) : 0;
+    
+    return {
+      recentMessages,
+      isMuted,
+      timeLeft,
+      canSend: this.canUserSend(userId)
+    };
+  }
+}
+
+// ============================================
 // DATA MANAGER CLASS - JSON থেকে সব লোড হবে
 // ============================================
 class DataManager {
@@ -33,6 +344,7 @@ class DataManager {
     this.emojiReplies = [];
     this.settings = {};
     this.borderSystem = new PerfectBorderSystem();
+    this.spamProtection = new SpamProtection();
     this.dataPath = path.join(__dirname, 'data');
   }
 
@@ -41,6 +353,9 @@ class DataManager {
       // Create data directory if it doesn't exist
       await fs.mkdir(this.dataPath, { recursive: true });
 
+      // Load borders first
+      await this.borderSystem.loadBorders();
+      
       // Load config.json
       await this.loadConfig();
       
@@ -49,6 +364,9 @@ class DataManager {
       
       // Load other JSON files if they exist
       await this.loadAdditionalData();
+      
+      // Start spam protection cleanup
+      this.spamProtection.startCleanupTimer();
       
       console.log('✅ All data loaded successfully from JSON files');
       
@@ -178,24 +496,24 @@ class DataManager {
 
   getDefaultReplies() {
     return {
-      "hi": ["Hello! 👋", "Hi there! 😊", "Hey! ❤️"],
-      "hello": ["Hi! 😄", "Hello! 💖", "Hey there! 🌸"],
-      "test": ["Test successful! ✅", "Working! 🚀", "All good! 👍"],
-      "i love you": ["Love you too! ❤️", "Aww 😘", "You're sweet! 💕"],
-      "how are you": ["I'm good! 😊", "All good! 😄", "Feeling great! 🌟"],
-      "бот": ["Bot здесь! 🤖", "Привет! 👋", "Да, я здесь! ✅"],
-      "ping": ["Pong! 🏓", "Я жив! 💖", "Активен! ✅"],
-      "бот проверка": ["Проверка пройдена! ✅", "Я здесь! 👍", "Работаю нормально! 🚀"],
-      "бот работаешь": ["Работаю! 💪", "Да, всё хорошо! ✅", "Всё в порядке! 🟢"],
-      "салам": ["Ва алейкум ассалам! 🕌", "Салам! 👋", "Привет! 😊"],
-      "привет": ["Привет! 👋", "Здравствуй! 😊", "Приветствую! 🌸"],
-      "спокойной ночи": ["Спокойной ночи! 🌙", "Сладких снов! 💤", "Доброй ночи! 😴"],
-      "доброе утро": ["Доброе утро! ☀️", "С добрым утром! 🌅", "Утра доброго! 😊"],
-      "что делаешь": ["Отвечаю тебе! 💬", "Думаю о тебе! 💖", "Работаю! 🤖"],
-      "скучаешь": ["Да, скучаю! 😔", "Конечно! 💕", "Очень! 😘"],
-      "good night": ["Good night! 🌙", "Sweet dreams! 💤", "Sleep well! 😴"],
-      "good morning": ["Good morning! ☀️", "Morning! 🌅", "Rise and shine! 😊"],
-      "miss you": ["Miss you too! 😔", "Always! 💕", "So much! 😘"]
+      "hi": ["<b>Hello!</b> 👋", "<i>Hi there!</i> 😊", "<code>Hey!</code> ❤️"],
+      "hello": ["<b>Hi!</b> 😄", "<u>Hello!</u> 💖", "Hey there! 🌸"],
+      "test": ["<b>Test successful!</b> ✅", "<i>Working!</i> 🚀", "All good! 👍"],
+      "i love you": ["<b>Love you too!</b> ❤️", "<i>Aww</i> 😘", "You're sweet! 💕"],
+      "how are you": ["<b>I'm good!</b> 😊", "All good! 😄", "<u>Feeling great!</u> 🌟"],
+      "бот": ["<b>Bot здесь!</b> 🤖", "<i>Привет!</i> 👋", "Да, я здесь! ✅"],
+      "ping": ["<b>Pong!</b> 🏓", "<i>Я жив!</i> 💖", "Активен! ✅"],
+      "бот проверка": ["<b>Проверка пройдена!</b> ✅", "Я здесь! 👍", "Работаю нормально! 🚀"],
+      "бот работаешь": ["<b>Работаю!</b> 💪", "Да, всё хорошо! ✅", "Всё в порядке! 🟢"],
+      "салам": ["<b>Ва алейкум ассалам!</b> 🕌", "<i>Салам!</i> 👋", "Привет! 😊"],
+      "привет": ["<b>Привет!</b> 👋", "Здравствуй! 😊", "Приветствую! 🌸"],
+      "спокойной ночи": ["<b>Спокойной ночи!</b> 🌙", "<i>Сладких снов!</i> 💤", "Доброй ночи! 😴"],
+      "доброе утро": ["<b>Доброе утро!</b> ☀️", "С добрым утром! 🌅", "<u>Утра доброго!</u> 😊"],
+      "что делаешь": ["<b>Отвечаю тебе!</b> 💬", "Думаю о тебе! 💖", "<i>Работаю!</i> 🤖"],
+      "скучаешь": ["<b>Да, скучаю!</b> 😔", "Конечно! 💕", "<u>Очень!</u> 😘"],
+      "good night": ["<b>Good night!</b> 🌙", "<i>Sweet dreams!</i> 💤", "Sleep well! 😴"],
+      "good morning": ["<b>Good morning!</b> ☀️", "Morning! 🌅", "<u>Rise and shine!</u> 😊"],
+      "miss you": ["<b>Miss you too!</b> 😔", "Always! 💕", "So much! 😘"]
     };
   }
 
@@ -255,124 +573,13 @@ class DataManager {
   formatWithBorder(text) {
     return this.borderSystem.createPerfectBorder(text);
   }
-}
 
-// ============================================
-// PERFECT BORDER SYSTEM - EXACT CENTERING
-// ============================================
-class PerfectBorderSystem {
-  constructor() {
-    this.styles = [
-      {
-        name: "Double Line",
-        tl: "╔", tr: "╗", bl: "╚", br: "╝",
-        h: "═", v: "║"
-      },
-      {
-        name: "Single Line", 
-        tl: "┌", tr: "┐", bl: "└", br: "┘",
-        h: "─", v: "│"
-      },
-      {
-        name: "Rounded",
-        tl: "╭", tr: "╮", bl: "╰", br: "╯",
-        h: "─", v: "│"
-      },
-      {
-        name: "Thick",
-        tl: "▛", tr: "▜", bl: "▙", br: "▟",
-        h: "▀", v: "▌"
-      },
-      {
-        name: "Bold",
-        tl: "┏", tr: "┓", bl: "┗", br: "┛",
-        h: "━", v: "┃"
-      },
-      {
-        name: "Star",
-        tl: "✦", tr: "✦", bl: "✦", br: "✦",
-        h: "─", v: "│"
-      }
-    ];
+  canUserSendMessage(userId) {
+    return this.spamProtection.canUserSend(userId);
   }
 
-  calculateTextWidth(text) {
-    let width = 0;
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      const code = text.charCodeAt(i);
-      
-      // Emoji and special characters count as 1
-      if (code >= 0x1F600 && code <= 0x1F64F) width += 1; // Emoticons
-      else if (code >= 0x1F300 && code <= 0x1F5FF) width += 1; // Symbols
-      else if (code >= 0x1F680 && code <= 0x1F6FF) width += 1; // Transport
-      else if (code >= 0x2600 && code <= 0x26FF) width += 1; // Misc
-      else if (code >= 0x2700 && code <= 0x27BF) width += 1; // Dingbats
-      else width += 1; // Normal characters
-    }
-    return width;
-  }
-
-  createPerfectBorder(text) {
-    if (!text || text.trim() === '') {
-      return text;
-    }
-
-    // Select random border style
-    const style = this.styles[Math.floor(Math.random() * this.styles.length)];
-    
-    // Split text into lines
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    if (lines.length === 0) return text;
-    
-    // Find maximum visual width
-    let maxWidth = 0;
-    lines.forEach(line => {
-      const width = this.calculateTextWidth(line);
-      if (width > maxWidth) maxWidth = width;
-    });
-    
-    // Calculate border width (text + padding)
-    const sidePadding = 2; // 2 spaces on each side
-    const borderWidth = maxWidth + (sidePadding * 2);
-    
-    // Ensure minimum width
-    const minWidth = 30; // Increased for better centering
-    const finalWidth = Math.max(borderWidth, minWidth);
-    
-    // Create borders
-    const topBorder = style.tl + style.h.repeat(finalWidth) + style.tr;
-    const bottomBorder = style.bl + style.h.repeat(finalWidth) + style.br;
-    const emptyLine = style.v + ' '.repeat(finalWidth) + style.v;
-    
-    // Create centered text lines
-    const centeredLines = lines.map(line => {
-      const lineWidth = this.calculateTextWidth(line);
-      const totalSpaces = finalWidth - lineWidth;
-      const leftSpaces = Math.floor(totalSpaces / 2);
-      const rightSpaces = totalSpaces - leftSpaces;
-      
-      // Ensure leftSpaces is at least 1
-      const actualLeftSpaces = Math.max(1, leftSpaces);
-      const actualRightSpaces = Math.max(1, rightSpaces);
-      
-      return style.v + ' '.repeat(actualLeftSpaces) + line + ' '.repeat(actualRightSpaces) + style.v;
-    });
-    
-    // Assemble complete border
-    const result = [];
-    result.push(topBorder);
-    result.push(emptyLine);
-    
-    // Add all text lines
-    centeredLines.forEach(line => {
-      result.push(line);
-    });
-    
-    result.push(emptyLine);
-    result.push(bottomBorder);
-    
-    return result.join('\n');
+  getUserSpamStats(userId) {
+    return this.spamProtection.getUserStats(userId);
   }
 }
 
@@ -471,7 +678,9 @@ class MessageHandler {
       reactionsSent: 0,
       voiceReplies: 0,
       stickerReplies: 0,
-      emojiReplies: 0
+      emojiReplies: 0,
+      spamBlocked: 0,
+      botMessagesIgnored: 0
     };
   }
 
@@ -481,13 +690,23 @@ class MessageHandler {
       return false;
     }
     
-    // Skip if from bot
+    // Skip if from bot (বট মেসেজ ইগনোর)
     if (message.sender && message.sender.bot) {
+      this.stats.botMessagesIgnored++;
+      console.log(`🤖 Bot message ignored from ${message.senderId}`);
       return false;
     }
     
     // Skip own messages
     if (message.out) {
+      return false;
+    }
+    
+    // Check spam protection
+    const userId = message.senderId;
+    if (userId && !this.data.canUserSendMessage(userId)) {
+      this.stats.spamBlocked++;
+      console.log(`🔇 Spam blocked from user ${userId}`);
       return false;
     }
     
@@ -503,6 +722,7 @@ class MessageHandler {
     
     // Check rate limit
     if (!this.rateLimiter.canPerformAction()) {
+      console.log('⚠️ Rate limit reached, skipping message');
       return false;
     }
     
@@ -619,7 +839,8 @@ class MessageHandler {
     try {
       // Send a message about voice feature
       await this.client.sendMessage(message.chatId, {
-        message: "🎵 Voice reply feature is active! (Configure voice files in data/ folder)"
+        message: "🎵 <b>Voice reply feature is active!</b>\n<i>Configure voice files in data/ folder</i>",
+        parseMode: 'html'
       });
       this.stats.voiceReplies++;
       this.lastActionTime = Date.now();
@@ -634,7 +855,8 @@ class MessageHandler {
     try {
       // Send a sticker or text about sticker feature
       await this.client.sendMessage(message.chatId, {
-        message: "😄 Sticker/Meme feature is active! (Add stickers in data/stickers.json)"
+        message: "😄 <b>Sticker/Meme feature is active!</b>\n<u>Add stickers in data/stickers.json</u>",
+        parseMode: 'html'
       });
       this.stats.stickerReplies++;
       this.lastActionTime = Date.now();
@@ -686,9 +908,9 @@ async function main() {
   console.log('='.repeat(60));
   console.log(`🤖 ${BOT_NAME} - Telegram Userbot`);
   console.log('='.repeat(60));
-  console.log(`📅 Version: 7.0.0 - ULTIMATE FINAL`);
-  console.log(`🌟 Status: ALL FEATURES ACTIVE + JSON LOADING`);
-  console.log(`🎯 Borders: PERFECT CENTERING FIXED`);
+  console.log(`📅 Version: 9.0.0 - ULTIMATE PROFESSIONAL`);
+  console.log(`🌟 Status: ALL FEATURES ACTIVE + SPAM PROTECTION`);
+  console.log(`🎯 Borders: SMART ADJUSTING + HTML SUPPORT`);
   console.log('='.repeat(60));
   
   // Initialize Data Manager (JSON থেকে সব লোড হবে)
@@ -738,6 +960,9 @@ async function main() {
         service: 'Telegram Userbot',
         uptime: process.uptime(),
         stats: messageHandler.stats,
+        border_styles_loaded: dataManager.borderSystem.borders.length,
+        spam_protection: 'active',
+        html_support: 'active',
         timestamp: new Date().toISOString()
       }));
     });
@@ -746,31 +971,47 @@ async function main() {
       console.log(`✅ Health check server running on port ${PORT}`);
     });
     
-    // Show perfect border examples
-    console.log('\n📦 PERFECT BORDER EXAMPLES:');
+    // Show border examples from JSON
+    console.log('\n📦 SMART BORDER EXAMPLES:');
     console.log('='.repeat(40));
-    console.log(dataManager.formatWithBorder("Hello! How are you?"));
-    console.log('');
-    console.log(dataManager.formatWithBorder("Hi 🤗"));
-    console.log('');
-    console.log(dataManager.formatWithBorder("I love you! ❤️"));
+    
+    // Show different border examples
+    const testTexts = [
+      "Hi!",
+      "Hello! How are you?",
+      "This is a longer message to test border adjustment with multiple lines of text",
+      "<b>HTML</b> <i>formatted</i> <u>text</u> <code>with</code> styling"
+    ];
+    
+    for (const text of testTexts) {
+      console.log(dataManager.formatWithBorder(text));
+      console.log('');
+    }
+    
     console.log('='.repeat(40));
     
     console.log('\n✨ ALL FEATURES ACTIVE:');
     console.log('   • Private chat replies ✓');
     console.log('   • Group chat replies ✓');
-    console.log('   • Perfect border system ✓');
-    console.log('   • Exact text centering ✓');
-    console.log('   • HTML formatting ✓');
+    console.log('   • Smart border system ✓');
+    console.log('   • HTML formatting support ✓');
     console.log('   • Typing simulation ✓');
     console.log('   • Random reactions ✓');
     console.log('   • Voice replies ✓');
     console.log('   • Sticker replies ✓');
     console.log('   • Emoji replies ✓');
-    console.log('   • Rate limiting ✓');
+    console.log('   • Spam protection ✓');
     console.log('   • Bot message ignoring ✓');
+    console.log('   • Rate limiting ✓');
     console.log('   • HTTP health endpoint ✓');
     console.log('   • JSON file loading ✓');
+    console.log('   • Smart border adjustment ✓');
+    console.log('='.repeat(60));
+    
+    console.log('\n🔒 SPAM PROTECTION:');
+    console.log('   • Max 7 messages/minute per user');
+    console.log('   • 1 minute mute for spammers');
+    console.log('   • Automatic cleanup');
     console.log('='.repeat(60));
     
     console.log('\n💡 TEST COMMANDS:');
@@ -789,7 +1030,7 @@ async function main() {
       const seconds = Math.floor(uptime % 60);
       
       console.log('\n📊 SYSTEM STATUS:');
-      console.log('─'.repeat(40));
+      console.log('─'.repeat(45));
       console.log(`⏰ Uptime: ${hours}h ${minutes}m ${seconds}s`);
       console.log(`📨 Messages: ${messageHandler.stats.messagesReceived}`);
       console.log(`📤 Replies: ${messageHandler.stats.responsesSent}`);
@@ -799,10 +1040,13 @@ async function main() {
       console.log(`   ├─ Reactions: ${messageHandler.stats.reactionsSent}`);
       console.log(`   ├─ Voice: ${messageHandler.stats.voiceReplies}`);
       console.log(`   ├─ Stickers: ${messageHandler.stats.stickerReplies}`);
-      console.log(`   └─ Emojis: ${messageHandler.stats.emojiReplies}`);
+      console.log(`   ├─ Emojis: ${messageHandler.stats.emojiReplies}`);
+      console.log(`   ├─ Spam blocked: ${messageHandler.stats.spamBlocked}`);
+      console.log(`   └─ Bot ignored: ${messageHandler.stats.botMessagesIgnored}`);
       console.log(`⚡ Rate Limit: ${rateLimiter.getRemainingActions()}/${dataManager.getSetting('max_actions_per_minute', 50)} left`);
+      console.log(`🎨 Border Styles: ${dataManager.borderSystem.borders.length}`);
       console.log(`❌ Errors: ${messageHandler.stats.errors}`);
-      console.log('─'.repeat(40));
+      console.log('─'.repeat(45));
     }, 300000);
     
     // Graceful shutdown handlers
