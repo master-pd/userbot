@@ -1,17 +1,152 @@
 {
-  "hello": ["Hi there!", "Hello!", "Hey!"],
-  "hi": ["Hello!", "Hi!", "Hey there!"],
-  "how are you": ["I'm good, thanks!", "Doing well!", "All good!"],
-  "test": ["Test successful!", "Working fine!", "All systems go!"],
-  "crush": ["😊", "❤️", "You're sweet!"],
-  "good morning": ["Good morning!", "Morning! Have a great day!", "Rise and shine!"],
-  "good night": ["Good night!", "Sleep well!", "Sweet dreams!"],
-  "thanks": ["You're welcome!", "Anytime!", "No problem!"],
-  "thank you": ["You're welcome!", "My pleasure!", "Happy to help!"],
-  "lol": ["😂", "Haha!", "Funny!"],
-  "haha": ["😄", "LOL!", "Glad you're laughing!"],
-  "love you": ["❤️", "Aww!", "You're sweet!"],
-  "miss you": ["Miss you too!", "❤️", "Thinking of you!"],
-  "what's up": ["Not much!", "Just chilling!", "All good!"],
-  "wyd": ["Just here!", "Nothing much!", "Chatting with you!"]
+  "hi": ["Hello!", "Hi there!", "Hey!", "Hi! 👋", "Hello! How are you?", "Hey there! 😊"],
+  "hello": ["Hi!", "Hello!", "Hey there!", "Hello! 😄", "Hi! What's up?", "Hey! Nice to see you!"],
+  "hey": ["Hi!", "Hey!", "Hello!", "Hey there! 😊", "Hi! How's it going?"],
+  
+  "how are you": ["I'm good, thanks! 😊", "Doing well! How about you?", "All good! Thanks for asking!", "Great! And you?", "I'm fine! Hope you're doing well!"],
+  "how are you doing": ["I'm doing good! 😊", "Pretty well! How about you?", "All good here! Thanks!", "Fine! And you?", "Doing great! 😄"],
+  
+  "what's up": ["Not much! Just here! 😊", "Nothing special! How about you?", "Just chilling! 😎", "All good! What's up with you?", "Hi there! 😄"],
+  "wyd": ["Just here! 😊", "Nothing much! How about you?", "Chatting with you! 😄", "Just relaxing! 😎", "Hey there! 👋"],
+  
+  "good morning": ["Good morning! 🌞", "Morning! Have a great day! 😊", "Rise and shine! ☀️", "Good morning! Hope you sleep well!", "Morning! 😄"],
+  "gm": ["GM! 🌞", "Good morning! 😊", "Morning! ☀️", "GM! Have a nice day!", "Morning! 😄"],
+  
+  "good night": ["Good night! 🌙", "Night night! Sleep well! 😴", "Sweet dreams! 💭", "Good night! See you tomorrow!", "Night! 😴"],
+  "gn": ["GN! 🌙", "Good night! 😴", "Sleep tight! 💤", "Night! Sweet dreams!", "GN! 😴"],
+  
+  "test": ["Test successful! ✅", "Working! 👍", "All systems go! 🚀", "Test passed! ✅", "I'm alive! 😄"],
+  
+  "crush": ["😊", "❤️", "You're sweet! 😊", "Aww! ❤️", "🙈", "Hehe! 😄"],
+  "love you": ["❤️", "Aww! 😊", "You're sweet! ❤️", "Love you too! 😘", "❤️❤️❤️"],
+  "miss you": ["Miss you too! ❤️", "Aww! 😊", "❤️", "Thinking of you! 😊", "Same here! ❤️"],
+  
+  "thanks": ["You're welcome! 😊", "Anytime! 👍", "No problem! 😄", "My pleasure! 😊", "Happy to help! ❤️"],
+  "thank you": ["You're welcome! 😊", "Anytime! 👍", "No problem! 😄", "My pleasure! ❤️", "Happy to help! 😊"],
+  "ty": ["You're welcome! 😊", "NP! 👍", "Anytime! 😄", "YW! ❤️", "😊"],
+  
+  "lol": ["😂", "Haha! 😄", "Funny! 😂", "LOL! 🤣", "Hehe! 😄"],
+  "haha": ["😄", "LOL! 😂", "Glad you're laughing! 😊", "Hehe! 😄", "😂"],
+  "funny": ["😂", "Haha! 😄", "Glad you liked it! 😊", "😄", "Hehe! 😂"],
+  
+  "ok": ["Okay! 👍", "Alright! 😊", "OK! ✅", "Got it! 👍", "Sure! 😄"],
+  "okay": ["Alright! 👍", "Okay! 😊", "Sure! ✅", "Got it! 👍", "OK! 😄"],
+  
+  "yes": ["Great! 👍", "Okay! 😊", "Alright! ✅", "Sure! 👍", "Yes! 😄"],
+  "no": ["Okay! 👍", "Alright! 😊", "No problem! ✅", "Sure! 👍", "OK! 😄"],
+  
+  "bye": ["Bye! 👋", "Goodbye! 😊", "See you! 👋", "Take care! 😊", "Bye bye! 👋"],
+  "goodbye": ["Goodbye! 👋", "Bye! 😊", "See you later! 👋", "Take care! 😊", "Bye! 👋"],
+  
+  "help": ["I'm a simple rule-based bot! 😊", "I respond to specific messages only!", "Check my commands in the README!", "I work with predefined responses! 😄"],
+  
+  "who are you": ["I'm YOUR CRUSH userbot! 😊", "I'm a rule-based Telegram bot! 🤖", "I'm your friendly bot! 😄", "I'm here to chat with you! 😊"],
+  
+  "what is your name": ["I'm YOUR CRUSH! 😊", "Call me YOUR CRUSH! 😄", "I'm YOUR CRUSH userbot! 🤖", "My name is YOUR CRUSH! 😊"],
+  
+  "age": ["I'm ageless! 😊", "I'm forever young! 😄", "Age is just a number! 😊", "I exist in the digital world! 🤖"],
+  
+  "where are you from": ["I'm from the digital world! 🌐", "I live in your Telegram! 😊", "I'm from the cloud! ☁️", "I exist everywhere! 😄"],
+  
+  "sing": ["🎵🎶", "La la la! 🎵", "🎤🎶", "Music time! 🎵", "🎧🎶"],
+  
+  "music": ["🎵🎶", "Love music! 🎧", "Playing some tunes! 🎵", "Music is life! 🎶", "🎤🎵"],
+  
+  "food": ["🍕", "🍔", "🍣", "🍜", "🥗", "Love food! 😋"],
+  
+  "coffee": ["☕", "Love coffee! ☕", "Coffee time! ☕", "Need coffee! ☕", "☕😊"],
+  
+  "sleep": ["😴", "Sleepy! 😴", "Time to sleep! 😴", "Good night! 😴", "😴💤"],
+  
+  "work": ["💼", "Working hard! 💪", "Busy! 💼", "At work! 💼", "Working! 💼"],
+  
+  "study": ["📚", "Studying! 📖", "Learning! 🧠", "Education time! 📚", "📖✏️"],
+  
+  "game": ["🎮", "Gaming! 🎮", "Play time! 🎮", "Love games! 🎮", "🎮😄"],
+  
+  "movie": ["🎬", "Watching movie! 🎬", "Movie time! 🍿", "Love movies! 🎬", "🎬😊"],
+  
+  "weather": ["☀️", "🌧️", "❄️", "🌤️", "It's nice! 😊"],
+  
+  "hot": ["🔥", "So hot! 🔥", "Stay cool! ❄️", "🔥😅", "Hot weather! ☀️"],
+  
+  "cold": ["❄️", "So cold! ❄️", "Stay warm! 🔥", "❄️🥶", "Cold weather! ❄️"],
+  
+  "rain": ["🌧️", "Rainy day! 🌧️", "Love rain! 🌧️", "☔", "🌧️😊"],
+  
+  "sun": ["☀️", "Sunny! ☀️", "Love sunshine! ☀️", "🌞", "☀️😊"],
+  
+  "moon": ["🌙", "Moon is beautiful! 🌙", "Good night! 🌙", "🌙😴", "Moonlight! 🌙"],
+  
+  "star": ["⭐", "Stars! ✨", "Starry night! 🌟", "✨", "⭐😊"],
+  
+  "heart": ["❤️", "❤️❤️❤️", "Love! ❤️", "❤️😊", "Heart you! ❤️"],
+  
+  "smile": ["😊", "😄", "🙂", "😁", "Keep smiling! 😊"],
+  
+  "cry": ["😢", "Don't cry! 🥺", "😭", "It's okay! 🤗", "😢❤️"],
+  
+  "angry": ["😠", "Calm down! 🧘", "😡", "Take a deep breath! 😤", "😠❤️"],
+  
+  "sad": ["😔", "Don't be sad! 🥺", "😞", "Cheer up! 😊", "🤗❤️"],
+  
+  "happy": ["😄", "Yay! 🎉", "😊", "Great! 👍", "Happy! 😄"],
+  
+  "excited": ["🤩", "Exciting! 🎉", "😃", "Wow! 🤩", "Can't wait! 😄"],
+  
+  "bored": ["😑", "Find something fun! 🎮", "😒", "Watch a movie! 🎬", "Play games! 🎮"],
+  
+  "tired": ["😫", "Rest! 😴", "😩", "Take a break! ☕", "Sleep! 😴"],
+  
+  "sick": ["🤒", "Get well soon! 🌡️", "😷", "Take care! 💊", "Rest well! 😴"],
+  
+  "alone": ["🤗", "I'm here! 😊", "You're not alone! ❤️", "🤗❤️", "I'm with you! 😊"],
+  
+  "friend": ["👫", "Friends forever! 👬", "👭", "Best friends! ❤️", "Friend! 😊"],
+  
+  "family": ["👨‍👩‍👧‍👦", "Family first! ❤️", "👪", "Family love! ❤️", "Family! 😊"],
+  
+  "home": ["🏠", "Sweet home! 🏠", "🏡", "Home sweet home! 🏠", "Home! 😊"],
+  
+  "travel": ["✈️", "Travel time! 🧳", "🏝️", "Adventure! 🗺️", "✈️😊"],
+  
+  "photo": ["📸", "Say cheese! 📷", "🖼️", "Photo time! 📸", "📷😊"],
+  
+  "video": ["🎥", "Video call? 📹", "🎬", "Recording! 🎥", "📹😊"],
+  
+  "call": ["📞", "Calling! 📱", "📲", "Phone call! 📞", "📱😊"],
+  
+  "message": ["📨", "Messaging! 💬", "📩", "Got your message! 💌", "💬😊"],
+  
+  "internet": ["🌐", "Online! 🖥️", "📡", "Connected! 🌐", "🖥️😊"],
+  
+  "phone": ["📱", "Smartphone! 📲", "📞", "Mobile! 📱", "📲😊"],
+  
+  "computer": ["💻", "PC! 🖥️", "⌨️", "Computer! 💻", "🖥️😊"],
+  
+  "time": ["🕐", "What time is it? ⌚", "🕒", "Time flies! ⏰", "⌚😊"],
+  
+  "date": ["📅", "What's the date? 🗓️", "📆", "Calendar! 📅", "🗓️😊"],
+  
+  "money": ["💰", "Cash! 💵", "💸", "Money! 💰", "💳😊"],
+  
+  "shopping": ["🛒", "Shopping time! 🛍️", "💳", "Buying! 🛒", "🛍️😊"],
+  
+  "party": ["🎉", "Party time! 🥳", "🎊", "Let's party! 🎉", "🥳😊"],
+  
+  "birthday": ["🎂", "Happy birthday! 🎈", "🥳", "Birthday party! 🎂", "🎁😊"],
+  
+  "christmas": ["🎄", "Merry Christmas! 🎅", "🎁", "Christmas time! 🎄", "🤶😊"],
+  
+  "new year": ["🎆", "Happy New Year! 🎇", "🎊", "New Year 2024! 🎆", "🥳😊"],
+  
+  "holiday": ["🏖️", "Holiday! ✨", "🎉", "Vacation! 🏝️", "😎😊"],
+  
+  "weekend": ["😎", "Weekend! 🎉", "🛋️", "Relax! 😎", "😴😊"],
+  
+  "monday": ["📅", "Monday! 💼", "😑", "Start of week! 📅", "💪😊"],
+  
+  "friday": ["🎉", "Friday! 🥳", "😄", "Weekend is near! 🎉", "🥳😊"],
+  
+  "sunday": ["😴", "Sunday! 🛌", "😊", "Rest day! 😴", "🛋️😊"]
 }
