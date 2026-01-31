@@ -1,0 +1,17 @@
+{
+  "hello": ["Hi there!", "Hello!", "Hey!"],
+  "hi": ["Hello!", "Hi!", "Hey there!"],
+  "how are you": ["I'm good, thanks!", "Doing well!", "All good!"],
+  "test": ["Test successful!", "Working fine!", "All systems go!"],
+  "crush": ["😊", "❤️", "You're sweet!"],
+  "good morning": ["Good morning!", "Morning! Have a great day!", "Rise and shine!"],
+  "good night": ["Good night!", "Sleep well!", "Sweet dreams!"],
+  "thanks": ["You're welcome!", "Anytime!", "No problem!"],
+  "thank you": ["You're welcome!", "My pleasure!", "Happy to help!"],
+  "lol": ["😂", "Haha!", "Funny!"],
+  "haha": ["😄", "LOL!", "Glad you're laughing!"],
+  "love you": ["❤️", "Aww!", "You're sweet!"],
+  "miss you": ["Miss you too!", "❤️", "Thinking of you!"],
+  "what's up": ["Not much!", "Just chilling!", "All good!"],
+  "wyd": ["Just here!", "Nothing much!", "Chatting with you!"]
+}
