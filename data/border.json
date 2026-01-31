@@ -1,52 +1,22 @@
-{
-  "borders": [
-    {
-      "name": "Basic Box",
-      "top": "╔══════════════╗",
-      "middle": "║",
-      "bottom": "╚══════════════╝",
-      "left": "║ ",
-      "right": " ║"
-    },
-    {
-      "name": "Rounded Box",
-      "top": "╭──────────────╮",
-      "middle": "│",
-      "bottom": "╰──────────────╯",
-      "left": "│ ",
-      "right": " │"
-    },
-    {
-      "name": "Double Line Box",
-      "top": "╔══════════════╗",
-      "middle": "║",
-      "bottom": "╚══════════════╝",
-      "left": "║ ",
-      "right": " ║"
-    },
-    {
-      "name": "Thick Border",
-      "top": "▛▀▀▀▀▀▀▀▀▀▀▀▀▀▜",
-      "middle": "▌",
-      "bottom": "▙▄▄▄▄▄▄▄▄▄▄▄▄▄▟",
-      "left": "▌ ",
-      "right": " ▐"
-    },
-    {
-      "name": "Star Border",
-      "top": "✦──────────────✦",
-      "middle": "│",
-      "bottom": "✦──────────────✦",
-      "left": "│ ",
-      "right": " │"
-    },
-    {
-      "name": "Fancy Border",
-      "top": "•·.·´¯`·.·•·.·´¯`·.·•",
-      "middle": " ",
-      "bottom": "•·.·`¯´·.·•·.·`¯´·.·•",
-      "left": "   ",
-      "right": "   "
-    }
-  ]
-}
+[
+  {
+    "name": "Double Line",
+    "top": "══════",
+    "bottom": "══════"
+  },
+  {
+    "name": "Single Line",
+    "top": "──────",
+    "bottom": "──────"
+  },
+  {
+    "name": "Star Style",
+    "top": "✦────✦",
+    "bottom": "✦────✦"
+  },
+  {
+    "name": "Heart Style",
+    "top": "❤️────❤️",
+    "bottom": "❤️────❤️"
+  }
+]
