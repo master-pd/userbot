@@ -7,6 +7,7 @@ const { TelegramClient } = require('telegram');
 const { StringSession } = require('telegram/sessions');
 const fs = require('fs').promises;
 const path = require('path');
+const http = require('http'); // IMPORTANT: Add this line
 
 // ============================================
 // CONFIGURATION FROM RENDER ENVIRONMENT VARIABLES
@@ -20,6 +21,7 @@ const MAX_ACTIONS_PER_MINUTE = parseInt(process.env.MAX_ACTIONS_PER_MINUTE) || 5
 const TYPING_MIN_DELAY = parseInt(process.env.TYPING_MIN_DELAY) || 800;
 const TYPING_MAX_DELAY = parseInt(process.env.TYPING_MAX_DELAY) || 4000;
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+const PORT = process.env.PORT || 3000; // IMPORTANT: Add this line
 
 // ============================================
 // VALIDATION
@@ -32,6 +34,35 @@ if (!API_ID || !API_HASH || !SESSION_STRING) {
   console.error('3. SESSION_STRING (run: node session.js locally)');
   console.error('\n💡 Run "npm run session" locally first to generate session string');
   process.exit(1);
+}
+
+// ============================================
+// HTTP SERVER FOR RENDER (NEW ADDITION)
+// ============================================
+function startHttpServer() {
+  const server = http.createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: 'online',
+        bot: BOT_NAME,
+        service: 'Telegram Userbot',
+        uptime: process.uptime(),
+        platform: 'Render Web Service',
+        timestamp: new Date().toISOString()
+      }));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(`${BOT_NAME} is running on Render`);
+    }
+  });
+
+  server.listen(PORT, () => {
+    console.log(`🌐 HTTP Server running on port ${PORT}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  });
+
+  return server;
 }
 
 // ============================================
@@ -461,17 +492,21 @@ class HealthMonitor {
 }
 
 // ============================================
-// MAIN APPLICATION
+// UPDATED MAIN APPLICATION WITH HTTP SERVER
 // ============================================
 async function main() {
   console.log('='.repeat(50));
-  console.log(`🚀 ${BOT_NAME} - Starting on Render`);
+  console.log(`🚀 ${BOT_NAME} - Starting on Render Web Service`);
   console.log('='.repeat(50));
   console.log(`Version: 1.3.0`);
   console.log(`Classification: Production / Zero-AI-Dependency / High Safety`);
   console.log(`External AI: ${false}`);
-  console.log(`Render Worker: ${true}`);
+  console.log(`Render Web Service: ${true}`);
+  console.log(`Port: ${PORT}`);
   console.log('='.repeat(50));
+  
+  // Start HTTP Server First (Important for Render)
+  const httpServer = startHttpServer();
   
   // Initialize Telegram Client
   const stringSession = new StringSession(SESSION_STRING);
@@ -520,6 +555,7 @@ async function main() {
       console.log(`   Messages: ${status.messagesReceived}`);
       console.log(`   Responses: ${status.responsesSent}`);
       console.log(`   Rate Limit: ${status.remainingActions}/${MAX_ACTIONS_PER_MINUTE}`);
+      console.log(`   HTTP Port: ${PORT}`);
       console.log('─'.repeat(30));
     }, 300000); // Every 5 minutes
     
@@ -531,6 +567,7 @@ async function main() {
     console.log(`   • External AI: DISABLED`);
     console.log(`   • Rate limiting: ${MAX_ACTIONS_PER_MINUTE}/min`);
     console.log(`   • Typing delay: ${TYPING_MIN_DELAY}-${TYPING_MAX_DELAY}ms`);
+    console.log(`   • HTTP Server: Port ${PORT} (Render compatible)`);
     console.log(`   • Current state: IDLE`);
     console.log('='.repeat(50));
     
@@ -538,14 +575,18 @@ async function main() {
     process.on('SIGTERM', async () => {
       console.log('\n🛑 Received SIGTERM - Shutting down gracefully...');
       await client.disconnect();
+      httpServer.close();
       console.log('✅ Disconnected from Telegram');
+      console.log('✅ HTTP Server stopped');
       process.exit(0);
     });
     
     process.on('SIGINT', async () => {
       console.log('\n🛑 Received SIGINT - Shutting down...');
       await client.disconnect();
+      httpServer.close();
       console.log('✅ Disconnected from Telegram');
+      console.log('✅ HTTP Server stopped');
       process.exit(0);
     });
     
