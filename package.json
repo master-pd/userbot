@@ -1,0 +1,23 @@
+{
+  "name": "your-crush-userbot",
+  "version": "1.3.0",
+  "description": "Fully Offline AI-Free Telegram Userbot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "session": "node session.js"
+  },
+  "keywords": ["telegram", "userbot", "offline", "rule-based"],
+  "author": "Master Owner of MAR-PD",
+  "license": "MIT",
+  "dependencies": {
+    "telegram": "^2.15.12",
+    "input": "^1.0.1",
+    "dotenv": "^16.0.3",
+    "node-cron": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
