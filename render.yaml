@@ -1,0 +1,29 @@
+services:
+  - type: worker
+    name: your-crush-userbot
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_ID
+        sync: false
+      - key: API_HASH
+        sync: false
+      - key: SESSION_STRING
+        sync: false
+      - key: PHONE_NUMBER
+        sync: false
+      - key: BOT_NAME
+        value: "𝗬𝗢𝗨𝗥 𝗖𝗥𝗨𝗦𝗛 ⟵𝗼_𝟬"
+      - key: OWNER_ID
+        sync: false
+      - key: MAX_ACTIONS_PER_MINUTE
+        value: "50"
+      - key: TYPING_MIN_DELAY
+        value: "800"
+      - key: TYPING_MAX_DELAY
+        value: "4000"
+      - key: LOG_LEVEL
+        value: info
