@@ -1,0 +1,9 @@
+{
+  "voices": [
+    {
+      "id": "voice_1",
+      "file": "voices/hello.ogg",
+      "description": "Hello voice note"
+    }
+  ]
+}
