@@ -530,7 +530,7 @@ class DataManager {
 }
 
 // ============================================
-// MESSAGE HANDLER - ALL FEATURES
+// MESSAGE HANDLER - ALL FEATURES (FIXED FOR GROUPS)
 // ============================================
 class MessageHandler {
   constructor(client, dataManager) {
@@ -555,6 +555,7 @@ class MessageHandler {
     };
   }
 
+  // ✅ FIXED: গ্রুপ এবং প্রাইভেট উভয় জায়গায় রিপ্লাই দিবে
   async shouldProcessMessage(message) {
     if (!message || !message.message || message.message.trim() === '') return false;
     if (message.sender && message.sender.bot) {
@@ -569,8 +570,18 @@ class MessageHandler {
       return false;
     }
     
-    if (message.isGroup && !this.data.getSetting('reply_in_groups', true)) return false;
-    if (message.isChannel && !this.data.getSetting('reply_in_channels', false)) return false;
+    // ✅ FIXED: গ্রুপ চ্যাট চেক (সহজ পদ্ধতি)
+    const chatId = message.chatId;
+    const isGroupChat = chatId && chatId.toString().startsWith('-100');
+    
+    if (isGroupChat) {
+      // গ্রুপে রিপ্লাই দিবে কিনা সেটিংস চেক
+      const replyInGroups = this.data.getSetting('reply_in_groups', true);
+      if (!replyInGroups) {
+        console.log(`🚫 Skipping group message (reply_in_groups: false)`);
+        return false;
+      }
+    }
     
     const now = Date.now();
     if (now - this.lastActionTime < this.cooldownPeriod) return false;
@@ -583,6 +594,15 @@ class MessageHandler {
       const message = event.message;
       this.stats.messagesReceived++;
       
+      const chatId = message.chatId;
+      const isGroupChat = chatId && chatId.toString().startsWith('-100');
+      
+      if (isGroupChat) {
+        console.log(`📩 GROUP message received (Chat ID: ${chatId})`);
+      } else {
+        console.log(`📩 PRIVATE message received (Chat ID: ${chatId})`);
+      }
+      
       if (!await this.shouldProcessMessage(message)) {
         // রিয়েক্ট দিবে এমনকি যদি প্রসেস না করে
         if (this.data.getSetting('auto_react', true)) {
@@ -593,6 +613,8 @@ class MessageHandler {
       
       const text = message.message.toLowerCase().trim();
       const replyText = this.data.findReply(message.message);
+      
+      console.log(`🔍 Reply found: ${replyText ? 'YES' : 'NO'}`);
       
       // 1. সব মেসেজে রিয়েক্ট দিবে
       if (this.data.getSetting('auto_react', true)) {
@@ -661,8 +683,11 @@ class MessageHandler {
         finalMessage = `<blockquote>${replyText}</blockquote>`;
       }
       
-      // Add mention in groups
-      if ((message.isGroup || message.isChannel) && message.senderId) {
+      // গ্রুপে মেনশন যোগ করবে
+      const chatId = message.chatId;
+      const isGroupChat = chatId && chatId.toString().startsWith('-100');
+      
+      if (isGroupChat && message.senderId) {
         try {
           const sender = await this.client.getEntity(message.senderId);
           if (sender) {
@@ -689,11 +714,16 @@ class MessageHandler {
       }
       
       this.stats.responsesSent++;
-      if (message.isGroup) this.stats.groupReplies++;
-      else if (!message.isChannel) this.stats.privateReplies++;
       
-      const chatType = message.isGroup ? 'GROUP' : (message.isChannel ? 'CHANNEL' : 'PRIVATE');
-      console.log(`\n💌 [${chatType}] Replied to ${message.chatId}`);
+      // গ্রুপ/প্রাইভেট স্ট্যাটিসটিক্স
+      const isGroup = chatId && chatId.toString().startsWith('-100');
+      if (isGroup) {
+        this.stats.groupReplies++;
+        console.log(`\n💌 [GROUP] Replied to chat: ${chatId}`);
+      } else {
+        this.stats.privateReplies++;
+        console.log(`\n💌 [PRIVATE] Replied to user: ${chatId}`);
+      }
       
     } catch (error) {
       console.error('Reply error:', error.message);
@@ -854,6 +884,7 @@ async function main() {
     console.log('   ✓ JSON file loading');
     console.log('   ✓ Rate limiting');
     console.log('   ✓ Health check endpoint');
+    console.log('   ✓ GROUP & PRIVATE reply support ✅');
     console.log('='.repeat(60));
     
     setInterval(() => {
@@ -866,6 +897,8 @@ async function main() {
       console.log(`⏰ Uptime: ${hours}h ${minutes}m`);
       console.log(`📨 Messages: ${messageHandler.stats.messagesReceived}`);
       console.log(`📤 Replies: ${messageHandler.stats.responsesSent}`);
+      console.log(`   ├─ Group: ${messageHandler.stats.groupReplies}`);
+      console.log(`   └─ Private: ${messageHandler.stats.privateReplies}`);
       console.log(`⭐ Reactions: ${messageHandler.stats.reactionsSent}`);
       console.log(`⌨️ Typing Effects: ${messageHandler.stats.typingEffects}`);
       console.log(`🎨 Borders: ${messageHandler.stats.bordersUsed}`);
